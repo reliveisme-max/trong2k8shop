@@ -1,0 +1,266 @@
+/* assets/css/style.css - PUBG SIGNATURE THEME (Orange & Dark) */
+
+/* 1. CẤU HÌNH & FONT */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+:root {
+    /* MÀU CAM PUBG CHỦ ĐẠO */
+    --primary-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Cam -> Vàng đậm */
+    --primary-color: #f59e0b;
+    --primary-dark: #b45309;
+    
+    /* MÀU NỀN & TEXT */
+    --header-bg: #111827; /* Đen nhám (Gunmetal) */
+    --bg-body: #f3f4f6;   /* Xám rất nhạt cho nền sạch */
+    --card-bg: #ffffff;
+    --text-main: #1f2937;
+    --text-light: #6b7280;
+    
+    /* MÀU GIÁ TIỀN & ACCENT */
+    --price-color: #dc2626; /* Đỏ tươi */
+    --success-color: #10b981;
+}
+
+body {
+    background-color: var(--bg-body);
+    font-family: 'Inter', sans-serif;
+    color: var(--text-main);
+    -webkit-font-smoothing: antialiased;
+}
+
+a { text-decoration: none; }
+
+/* 2. HEADER ĐEN NGẦU */
+.main-header {
+    background: var(--header-bg);
+    padding: 16px 0;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3); /* Bóng đậm hơn */
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    border-bottom: 2px solid #f59e0b; /* Viền cam dưới header tạo điểm nhấn */
+}
+
+.logo-text {
+    font-weight: 900;
+    font-size: 24px;
+    color: #fff;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+/* Icon trong logo màu cam */
+.logo-text i { color: #f59e0b; filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.5)); }
+
+.nav-link {
+    color: #d1d5db;
+    font-weight: 700;
+    font-size: 13px;
+    text-transform: uppercase;
+    margin-left: 25px;
+    transition: 0.3s;
+}
+.nav-link:hover { color: #f59e0b; }
+
+/* Nút Thu Mua nổi bật (Màu vàng sáng) */
+.nav-link.highlight {
+    color: #fbbf24;
+    text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
+}
+
+/* 3. INTRO BOX (KHUNG THÔNG BÁO) - ĐÃ SỬA CHO ĐẸP HƠN */
+.intro-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 30px;
+    margin-bottom: 35px;
+    position: relative;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+    border: 1px solid #e5e7eb;
+    text-align: center;
+    /* Thêm vạch màu cam trên đầu để nhấn mạnh */
+    border-top: 5px solid #f59e0b; 
+}
+
+.intro-title {
+    font-weight: 800;
+    color: #111827;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+}
+
+.sub-title {
+    font-weight: 700;
+    color: #d97706; /* Màu cam đậm */
+    margin-bottom: 25px;
+    text-transform: uppercase;
+    font-size: 14px;
+}
+
+.policy-list li {
+    margin-bottom: 12px;
+    font-size: 15px;
+    color: #374151;
+    font-weight: 600;
+}
+
+/* BOX SỐ ĐIỆN THOẠI (Zalo) */
+.zalo-box {
+    display: inline-block;
+    background: #fef2f2; 
+    color: #ef4444;      
+    padding: 6px 18px;
+    border-radius: 50px;
+    font-weight: 800;
+    font-size: 19px; /* To hơn chút */
+    border: 2px solid #fee2e2;
+    margin-left: 8px;
+    cursor: pointer;
+    transition: 0.3s;
+    /* Hiệu ứng rung */
+    animation: pulse-red 2s infinite; 
+    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.15);
+}
+
+.zalo-box:hover {
+    background: #ef4444;
+    color: white;
+    transform: scale(1.05);
+    border-color: #ef4444;
+}
+
+@keyframes pulse-red {
+    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}
+
+/* 4. BỘ LỌC (FILTER PILLS) - STYLE CAM */
+.filter-section { margin-bottom: 40px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+
+.filter-pill {
+    background: #fff;
+    border: 1px solid #d1d5db;
+    color: #4b5563;
+    padding: 10px 22px;
+    border-radius: 8px; /* Bo góc vuông hơn chút cho nam tính */
+    font-size: 13px;
+    font-weight: 700;
+    transition: 0.2s;
+}
+
+.filter-pill:hover {
+    border-color: #f59e0b;
+    color: #d97706;
+    background: #fffbeb;
+    transform: translateY(-2px);
+}
+
+/* Active State - MÀU CAM GRADIENT */
+.filter-pill.active {
+    background: var(--primary-gradient);
+    color: white;
+    border: 1px solid #d97706;
+    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); /* Bóng cam */
+}
+
+/* Các nút chức năng đặc biệt */
+.filter-pill.btn-shop { border-color: #10b981; color: #10b981; }
+.filter-pill.btn-shop.active { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
+
+.filter-pill.btn-sold { background: #374151; color: #9ca3af; border: none; }
+.filter-pill.btn-sold.active { background: #111827; color: white; box-shadow: none; }
+
+
+/* 5. PRODUCT CARD - GAMING STYLE */
+.product-card {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+    border: 1px solid #e5e7eb;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Hover: Viền cam + Nổi lên */
+.product-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
+    border-color: #f59e0b; /* Viền chuyển cam khi di chuột */
+}
+
+.product-thumb-container {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    overflow: hidden;
+    background: #111; /* Nền đen lúc ảnh chưa load */
+}
+
+.product-thumb {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.6s ease;
+}
+.product-card:hover .product-thumb { transform: scale(1.05); }
+
+/* Badge ID: Đen + Cam */
+.card-badge-id {
+    position: absolute;
+    top: 10px; left: 10px;
+    background: #111827;
+    color: #f59e0b; /* Chữ cam */
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 800;
+    z-index: 2;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.sold-overlay {
+    background: rgba(17, 24, 39, 0.85); /* Đen đậm hơn */
+    backdrop-filter: blur(2px);
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: #9ca3af; font-weight: 800; font-size: 18px; text-transform: uppercase; z-index: 3;
+    letter-spacing: 2px;
+}
+
+.product-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+
+.product-title {
+    font-size: 15px; font-weight: 700; color: #1f2937;
+    margin-bottom: 10px; line-height: 1.5;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+}
+
+.product-meta {
+    margin-top: auto;
+    display: flex; justify-content: space-between; align-items: center;
+    padding-top: 12px;
+    border-top: 1px dashed #e5e7eb;
+}
+
+.price-tag {
+    color: #dc2626;
+    font-weight: 800; font-size: 17px;
+}
+
+/* Nút Xem Chi Tiết */
+.btn-detail {
+    font-size: 12px; font-weight: 700;
+    padding: 8px 16px; border-radius: 6px;
+    background: #f3f4f6; color: #4b5563;
+    transition: 0.3s;
+}
+.product-card:hover .btn-detail {
+    background: #f59e0b; /* Nền cam */
+    color: white;
+}
