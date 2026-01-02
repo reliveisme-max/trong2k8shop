@@ -1,9 +1,9 @@
 <?php
-// detail.php - TRANG CHI TIẾT SẢN PHẨM
+// detail.php - TRANG CHI TIẾT SẢN PHẨM (LIGHT MODE)
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-// 1. LẤY ID TỪ URL VÀ KIỂM TRA
+// 1. LẤY ID TỪ URL
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 if ($id == 0) {
@@ -11,7 +11,7 @@ if ($id == 0) {
     exit;
 }
 
-// 2. TRUY VẤN DỮ LIỆU
+// 2. TRUY VẤN DATABASE
 $stmt = $conn->prepare("SELECT * FROM products WHERE id = :id");
 $stmt->execute([':id' => $id]);
 $product = $stmt->fetch();
@@ -21,9 +21,8 @@ if (!$product) {
     die("Acc này không tồn tại hoặc đã bị xóa!");
 }
 
-// Giải mã JSON album ảnh
+// 3. XỬ LÝ ALBUM ẢNH (JSON -> Array)
 $gallery = json_decode($product['gallery'], true);
-// Nếu null (do acc cũ chưa có gallery) thì gán mảng rỗng
 if (!is_array($gallery)) $gallery = [];
 ?>
 
@@ -37,113 +36,11 @@ if (!is_array($gallery)) $gallery = [];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time() ?>">
-
-    <style>
-    /* CSS RIÊNG CHO TRANG DETAIL */
-
-    /* Box thông tin chính */
-    .detail-box {
-        background: #fff;
-        border-radius: 12px;
-        overflow: hidden;
-        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
-        border: 1px solid #e5e7eb;
-    }
-
-    /* Ảnh bìa bên trái */
-    .detail-thumb img {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        border: 1px solid #eee;
-    }
-
-    /* Giá tiền to bự */
-    .detail-price {
-        font-size: 28px;
-        font-weight: 900;
-        color: #dc2626;
-        margin: 10px 0;
-    }
-
-    /* Mô tả (cho phép xuống dòng) */
-    .detail-desc {
-        background: #f9fafb;
-        padding: 15px;
-        border-radius: 8px;
-        border: 1px dashed #d1d5db;
-        color: #374151;
-        font-size: 15px;
-        line-height: 1.6;
-        white-space: pre-line;
-        /* Giữ nguyên xuống dòng của người nhập */
-    }
-
-    /* Khu vực Album ảnh (Show hàng dọc) */
-    .gallery-container {
-        margin-top: 30px;
-        text-align: center;
-    }
-
-    .gallery-title {
-        font-weight: 800;
-        text-transform: uppercase;
-        margin-bottom: 20px;
-        position: relative;
-        display: inline-block;
-        padding-bottom: 10px;
-    }
-
-    .gallery-title::after {
-        content: '';
-        width: 50%;
-        height: 3px;
-        background: #f59e0b;
-        /* Màu cam */
-        position: absolute;
-        bottom: 0;
-        left: 25%;
-    }
-
-    .gallery-item {
-        margin-bottom: 20px;
-        border-radius: 8px;
-        overflow: hidden;
-        border: 1px solid #e5e7eb;
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-
-    .gallery-item img {
-        width: 100%;
-        display: block;
-        transition: transform 0.3s;
-    }
-
-    /* Hiệu ứng khi rê chuột vào ảnh album */
-    .gallery-item:hover img {
-        transform: scale(1.02);
-    }
-
-    /* Nút Mua Cố định dưới chân Mobile */
-    .sticky-action-bar {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        background: white;
-        padding: 12px;
-        box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
-        z-index: 999;
-        display: flex;
-        gap: 10px;
-        border-top: 1px solid #eee;
-    }
-    </style>
 </head>
 
 <body>
 
-    <!-- 1. HEADER (Copy từ index.php) -->
+    <!-- 1. HEADER -->
     <header class="main-header">
         <div class="container d-flex justify-content-between align-items-center">
             <a href="index.php" class="text-decoration-none">
@@ -151,8 +48,8 @@ if (!is_array($gallery)) $gallery = [];
                     <i class="ph-fill ph-crosshair"></i> TRỌNG 2K8 SHOP
                 </div>
             </a>
-            <a href="index.php" class="btn btn-outline-light btn-sm">
-                <i class="ph-bold ph-arrow-u-up-left"></i> Quay lại
+            <a href="index.php" class="btn btn-outline-dark btn-sm rounded-pill px-3 fw-bold">
+                <i class="ph-bold ph-arrow-left"></i> Quay lại
             </a>
         </div>
     </header>
@@ -160,135 +57,114 @@ if (!is_array($gallery)) $gallery = [];
     <div class="container py-4 mb-5">
 
         <!-- Breadcrumb -->
-        <nav aria-label="breadcrumb" class="mb-3">
+        <nav aria-label="breadcrumb" class="mb-4">
             <ol class="breadcrumb">
                 <li class="breadcrumb-item"><a href="index.php" class="text-secondary text-decoration-none">Trang
                         chủ</a></li>
-                <li class="breadcrumb-item active fw-bold" aria-current="page">Acc Mã Số #<?= $product['id'] ?></li>
+                <li class="breadcrumb-item active fw-bold" aria-current="page">Chi tiết Acc #<?= $product['id'] ?></li>
             </ol>
         </nav>
 
-        <!-- 2. KHỐI THÔNG TIN CHUNG -->
-        <div class="detail-box p-3 p-md-4">
+        <!-- 2. KHỐI THÔNG TIN CHÍNH -->
+        <div class="detail-box mb-4">
             <div class="row g-4">
 
                 <!-- Cột Trái: Ảnh Bìa -->
                 <div class="col-12 col-md-5">
-                    <div class="detail-thumb">
-                        <img src="uploads/<?= $product['thumb'] ?>" alt="<?= $product['title'] ?>">
+                    <div class="detail-thumb position-relative">
+                        <img src="uploads/<?= $product['thumb'] ?>" alt="<?= $product['title'] ?>"
+                            class="w-100 rounded-3 border">
+                        <?php if ($product['status'] == 0): ?>
+                        <div class="sold-overlay rounded-3">ĐÃ BÁN</div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
-                <!-- Cột Phải: Thông tin & Nút Mua -->
+                <!-- Cột Phải: Thông tin -->
                 <div class="col-12 col-md-7">
-                    <h4 class="fw-bold text-uppercase mb-2 lh-base"><?= $product['title'] ?></h4>
+                    <h4 class="fw-bold lh-base mb-2"><?= $product['title'] ?></h4>
 
-                    <div class="d-flex align-items-center gap-2 mb-3">
-                        <span class="badge bg-dark">MS: #<?= $product['id'] ?></span>
-                        <span class="badge bg-secondary"><?= date('d/m/Y', strtotime($product['created_at'])) ?></span>
-                        <?php if ($product['status'] == 1): ?>
-                        <span class="badge bg-success">Đang Bán</span>
-                        <?php else: ?>
-                        <span class="badge bg-danger">Đã Bán</span>
-                        <?php endif; ?>
+                    <div class="d-flex align-items-center gap-2 mb-3 text-secondary text-sm">
+                        <span class="badge bg-light text-dark border">MS: #<?= $product['id'] ?></span>
+                        <span><i class="ph-bold ph-clock"></i>
+                            <?= date('d/m/Y', strtotime($product['created_at'])) ?></span>
                     </div>
 
                     <div class="detail-price">
                         <?= formatPrice($product['price']) ?>
                     </div>
 
+                    <!-- Mô tả -->
                     <div class="detail-desc mb-4">
-                        <b>Mô tả:</b><br>
-                        <?= nl2br($product['description']) ?>
+                        <div class="fw-bold mb-2 text-dark"><i class="ph-fill ph-info"></i> Thông tin chi tiết:</div>
+                        <?= $product['description'] ? $product['description'] : "Chưa có mô tả chi tiết cho acc này." ?>
                     </div>
 
-                    <!-- Nút Mua Hàng (Desktop) -->
-                    <div class="d-none d-md-block">
-                        <?php if ($product['status'] == 1): ?>
-                        <button onclick="buyNow()" class="btn btn-primary btn-lg w-100 fw-bold py-3 text-uppercase fs-5"
-                            style="background: linear-gradient(to right, #f59e0b, #d97706); border:none;">
-                            <i class="ph-fill ph-shopping-cart"></i> Mua Ngay (Zalo)
-                        </button>
-                        <div class="text-center mt-2 text-muted fst-italic text-sm">
-                            <small>Hỗ trợ giao dịch trung gian, đổi thông tin an toàn 100%</small>
-                        </div>
-                        <?php else: ?>
-                        <button class="btn btn-secondary btn-lg w-100 fw-bold py-3" disabled>
-                            ĐÃ BÁN
-                        </button>
-                        <?php endif; ?>
+                    <!-- Nút Mua -->
+                    <?php if ($product['status'] == 1): ?>
+                    <button onclick="buyNow()" class="btn btn-warning w-100 py-3 text-uppercase fw-bold fs-5 shadow-sm">
+                        <i class="ph-bold ph-shopping-cart"></i> Mua Ngay (Qua Zalo)
+                    </button>
+                    <div class="text-center mt-2 text-secondary fst-italic" style="font-size: 13px;">
+                        * Hỗ trợ giao dịch trung gian, đổi thông tin an toàn 100%
                     </div>
+                    <?php else: ?>
+                    <button class="btn btn-secondary w-100 py-3 text-uppercase fw-bold fs-5" disabled>
+                        <i class="ph-bold ph-lock-key"></i> ACC NÀY ĐÃ BÁN
+                    </button>
+                    <?php endif; ?>
 
                 </div>
             </div>
         </div>
 
-        <!-- 3. KHỐI HÌNH ẢNH CHI TIẾT (SHOW DỌC - KHÔNG SLIDER) -->
+        <!-- 3. ALBUM ẢNH CHI TIẾT -->
         <?php if (!empty($gallery)): ?>
-        <div class="gallery-container">
-            <h4 class="gallery-title">Hình Ảnh Chi Tiết</h4>
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-10">
+        <div class="detail-box">
+            <h5 class="fw-bold mb-3 text-uppercase border-bottom pb-2">
+                <i class="ph-fill ph-images text-warning"></i> Hình ảnh chi tiết
+            </h5>
 
-                    <!-- Vòng lặp in ảnh ra hết -->
-                    <?php foreach ($gallery as $img): ?>
-                    <div class="gallery-item">
+            <div class="gallery-grid">
+                <?php foreach ($gallery as $img): ?>
+                <div class="gallery-item">
+                    <a href="uploads/<?= $img ?>" target="_blank">
                         <img src="uploads/<?= $img ?>" loading="lazy" alt="Ảnh chi tiết">
-                    </div>
-                    <?php endforeach; ?>
-
+                    </a>
                 </div>
+                <?php endforeach; ?>
             </div>
         </div>
         <?php endif; ?>
 
     </div>
 
-    <!-- 4. FOOTER MOBILE STICKY (Nút mua dính dưới đáy điện thoại) -->
-    <div class="sticky-action-bar d-md-none">
-        <div class="d-flex flex-column justify-content-center">
-            <span class="text-muted" style="font-size: 11px;">Giá bán:</span>
-            <span class="fw-bold text-danger fs-5"><?= formatPrice($product['price']) ?></span>
+    <!-- 4. FOOTER -->
+    <footer>
+        <div class="container">
+            <p class="mb-1 text-uppercase">&copy; 2024 TRỌNG 2K8 SHOP - UY TÍN TẠO NIỀM TIN</p>
+            <p class="mb-0">Hỗ trợ Zalo: <span class="text-dark fw-bold">0984.074.897</span></p>
         </div>
+    </footer>
 
-        <?php if ($product['status'] == 1): ?>
-        <button onclick="buyNow()" class="btn btn-primary flex-grow-1 fw-bold"
-            style="background: #f59e0b; border:none;">
-            MUA NGAY
-        </button>
-        <?php else: ?>
-        <button class="btn btn-secondary flex-grow-1 fw-bold" disabled>ĐÃ BÁN</button>
-        <?php endif; ?>
-    </div>
-
-    <!-- SCRIPT XỬ LÝ -->
+    <!-- SCRIPT MUA HÀNG -->
     <script>
-    // Hàm chuyển hướng sang Zalo với nội dung soạn sẵn
     function buyNow() {
         var id = "<?= $product['id'] ?>";
         var price = "<?= formatPrice($product['price']) ?>";
         var url = window.location.href; // Lấy link hiện tại
 
-        // Số Zalo của Admin
+        // Số Zalo của Shop
         var zaloPhone = "0984074897";
 
         // Nội dung tin nhắn
         var content = `Chào Shop, mình muốn mua Acc Mã Số #${id} giá ${price}.\nLink: ${url}`;
 
-        // Mã hóa URL để gửi qua web
+        // Chuyển hướng
         var zaloLink = `https://zalo.me/${zaloPhone}?text=${encodeURIComponent(content)}`;
-
-        // Mở tab mới
         window.open(zaloLink, '_blank');
     }
     </script>
-
-    <!-- Footer chung -->
-    <footer class="text-center py-4 mt-auto border-top bg-white pb-5 pb-md-3">
-        <p class="mb-0 text-secondary fw-bold text-uppercase" style="font-size: 12px; letter-spacing: 1px;">
-            &copy; 2024 Trong2k8 Shop - PUBG Mobile Vietnam
-        </p>
-    </footer>
 
 </body>
 

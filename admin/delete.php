@@ -1,7 +1,7 @@
 <?php
-// admin/delete.php
+// admin/delete.php - ĐÃ BẢO MẬT
+require_once 'auth.php'; // <--- CHỐT CHẶN BẢO VỆ
 require_once '../includes/config.php';
-session_start();
 
 // Kiểm tra ID
 if (isset($_GET['id'])) {
@@ -15,14 +15,18 @@ if (isset($_GET['id'])) {
     if ($product) {
         // Xóa ảnh bìa
         $thumbPath = "../uploads/" . $product['thumb'];
-        if (file_exists($thumbPath)) unlink($thumbPath);
+        if (file_exists($thumbPath)) {
+            unlink($thumbPath);
+        }
 
         // Xóa album ảnh
         $gallery = json_decode($product['gallery'], true);
         if (is_array($gallery)) {
             foreach ($gallery as $img) {
                 $imgPath = "../uploads/" . $img;
-                if (file_exists($imgPath)) unlink($imgPath);
+                if (file_exists($imgPath)) {
+                    unlink($imgPath);
+                }
             }
         }
 
@@ -32,6 +36,6 @@ if (isset($_GET['id'])) {
     }
 }
 
-// Quay về trang admin
-header("Location: index.php");
+// Xóa xong quay về trang danh sách
+header("Location: index.php?msg=deleted");
 exit;

@@ -1,49 +1,50 @@
 <?php
-// admin/get_images.php
-// File này trả về danh sách ảnh dưới dạng JSON để Javascript đọc
+// admin/get_images.php - API LẤY ẢNH TỪ THƯ MỤC UPLOADS
+require_once 'auth.php'; // Bảo mật: Chỉ admin mới lấy được danh sách ảnh
+
 header('Content-Type: application/json');
 
 // 1. Cấu hình
 $dir = "../uploads/";
-$limit = 24; // Số lượng ảnh tải mỗi lần (tăng lên nếu muốn load nhiều hơn)
 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit = 20; // Số ảnh lấy mỗi lần
 $offset = ($page - 1) * $limit;
 
-// 2. Quét thư mục và lấy thông tin file
-$files = [];
-if (is_dir($dir)) {
-    $scan = scandir($dir);
+// 2. Kiểm tra thư mục
+if (!is_dir($dir)) {
+    echo json_encode(['status' => 'error', 'message' => 'Thư mục uploads không tồn tại']);
+    exit;
+}
 
-    foreach ($scan as $file) {
-        // Loại bỏ ký tự đặc biệt và file không phải ảnh
-        if ($file === '.' || $file === '..') continue;
+// 3. Quét tất cả file trong thư mục
+$files = scandir($dir);
+$images = [];
 
-        $path = $dir . $file;
-        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
-
-        if (in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'gif'])) {
-            // Lưu tên file và thời gian sửa đổi
-            $files[$file] = filemtime($path);
+// Lọc chỉ lấy file ảnh
+foreach ($files as $file) {
+    if ($file !== '.' && $file !== '..') {
+        $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
+        if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
+            // Lấy thêm thời gian sửa đổi để sắp xếp ảnh mới nhất lên đầu
+            $images[$file] = filemtime($dir . $file);
         }
     }
 }
 
-// 3. Sắp xếp: Mới nhất lên đầu
-arsort($files);
+// 4. Sắp xếp ảnh mới nhất lên đầu
+arsort($images);
+$sortedImages = array_keys($images);
 
-// 4. Cắt danh sách theo trang (Pagination)
-// Lấy ra danh sách tên file sau khi sắp xếp
-$allFiles = array_keys($files);
-$totalFiles = count($allFiles);
+// 5. Cắt mảng theo phân trang (Pagination)
+$totalImages = count($sortedImages);
+$slicedImages = array_slice($sortedImages, $offset, $limit);
 
-// Cắt mảng lấy đúng số lượng cần thiết
-$resultFiles = array_slice($allFiles, $offset, $limit);
+// 6. Kiểm tra xem còn ảnh để load tiếp không
+$hasMore = ($offset + $limit) < $totalImages;
 
-// 5. Trả về kết quả JSON
+// 7. Trả về JSON
 echo json_encode([
-    'status' => 'success',
-    'page' => $page,
-    'total_files' => $totalFiles,
-    'data' => $resultFiles,
-    'has_more' => ($offset + $limit) < $totalFiles // Kiểm tra xem còn ảnh để load tiếp không
+    'status'   => 'success',
+    'data'     => $slicedImages,
+    'has_more' => $hasMore
 ]);
