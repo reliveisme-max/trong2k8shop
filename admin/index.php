@@ -1,5 +1,5 @@
 <?php
-// admin/index.php - ĐÃ THÊM MENU "QUẢN LÝ THƯ VIỆN"
+// admin/index.php - ĐÃ TÍCH HỢP SWEETALERT2
 require_once 'auth.php'; // Chốt chặn bảo vệ
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -38,6 +38,8 @@ foreach ($products as $p) {
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- CSS Tùy chỉnh -->
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
+    <!-- SweetAlert2 CSS -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
@@ -58,8 +60,6 @@ foreach ($products as $p) {
             <a href="add.php" class="menu-item">
                 <i class="ph-bold ph-plus"></i> Đăng Acc Mới
             </a>
-
-            <!-- MENU MỚI THÊM VÀO ĐÂY -->
             <a href="library.php" class="menu-item">
                 <i class="ph-bold ph-images"></i> Quản lý Thư viện
             </a>
@@ -174,9 +174,9 @@ foreach ($products as $p) {
                                     <i class="ph-bold ph-pencil-simple fs-5"></i>
                                 </a>
 
-                                <!-- NÚT XÓA -->
+                                <!-- NÚT XÓA (SWEETALERT) -->
                                 <a href="delete.php?id=<?= $p['id'] ?>" class="btn-action btn-action-delete"
-                                    onclick="return confirm('Xóa vĩnh viễn?')">
+                                    onclick="confirmDelete(event, this.href)">
                                     <i class="ph-bold ph-trash fs-5"></i>
                                 </a>
                             </td>
@@ -195,14 +195,74 @@ foreach ($products as $p) {
 
     </main>
 
-    <!-- SCRIPT XỬ LÝ MOBILE MENU -->
+    <!-- SCRIPT XỬ LÝ MOBILE MENU & SWEETALERT -->
     <script>
     function toggleMenu() {
         const sidebar = document.getElementById('sidebar');
         const overlay = document.getElementById('sidebarOverlay');
-
         sidebar.classList.toggle('show');
         overlay.classList.toggle('show');
+    }
+
+    // --- SWEETALERT CONFIG ---
+
+    // 1. Thông báo từ URL (Khi Redirect về)
+    const urlParams = new URLSearchParams(window.location.search);
+    const msg = urlParams.get('msg');
+
+    if (msg === 'added') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Tuyệt vời!',
+            text: 'Đã đăng bài thành công.',
+            confirmButtonColor: '#f59e0b',
+            background: '#18181b',
+            color: '#fff'
+        });
+        // Xóa param msg trên URL để F5 không hiện lại
+        window.history.replaceState({}, document.title, "index.php");
+    } else if (msg === 'updated') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Đã cập nhật!',
+            text: 'Thông tin acc đã được lưu.',
+            confirmButtonColor: '#f59e0b',
+            background: '#18181b',
+            color: '#fff'
+        });
+        window.history.replaceState({}, document.title, "index.php");
+    } else if (msg === 'deleted') {
+        Swal.fire({
+            icon: 'success',
+            title: 'Đã xóa!',
+            text: 'Acc đã bị xóa vĩnh viễn khỏi hệ thống.',
+            confirmButtonColor: '#f59e0b',
+            background: '#18181b',
+            color: '#fff'
+        });
+        window.history.replaceState({}, document.title, "index.php");
+    }
+
+    // 2. Xác nhận xóa
+    function confirmDelete(event, url) {
+        event.preventDefault(); // Chặn chuyển hướng mặc định
+
+        Swal.fire({
+            title: 'Bạn chắc chắn chứ?',
+            text: "Hành động này không thể hoàn tác!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444', // Đỏ
+            cancelButtonColor: '#27272a', // Xám
+            confirmButtonText: 'Vâng, xóa nó!',
+            cancelButtonText: 'Hủy bỏ',
+            background: '#18181b',
+            color: '#fff'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                window.location.href = url; // Chuyển hướng xóa thật
+            }
+        })
     }
     </script>
 

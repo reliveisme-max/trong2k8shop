@@ -1,17 +1,17 @@
-/* admin/assets/css/admin.css - FINAL FIXED VERSION */
+/* admin/assets/css/admin.css - FINAL VERSION (MOBILE RESPONSIVE FIX) */
 
 /* 1. CẤU HÌNH MÀU SẮC CHUNG */
 :root {
-    --bg-body: #09090b;       /* Nền đen sâu */
-    --bg-card: #18181b;       /* Nền card đen nhám */
-    --bg-input: #27272a;      /* Nền ô nhập liệu */
-    --border-color: #3f3f46;  /* Viền xám */
+    --bg-body: #09090b;       
+    --bg-card: #18181b;       
+    --bg-input: #27272a;      
+    --border-color: #3f3f46;  
     
-    --text-primary: #fafafa;  /* Trắng sáng */
-    --text-secondary: #a1a1aa;/* Xám bạc */
+    --text-primary: #fafafa;  
+    --text-secondary: #a1a1aa;
     --text-placeholder: #71717a; 
     
-    --accent-color: #f59e0b;  /* Màu cam chủ đạo */
+    --accent-color: #f59e0b;  
     --accent-hover: #d97706;
 }
 
@@ -70,9 +70,9 @@ body {
 }
 .library-box { border-style: solid; background: #27272a; }
 
-/* --- PREVIEW ẢNH (QUAN TRỌNG) --- */
+/* --- PREVIEW ẢNH --- */
 .preview-area, .preview-grid {
-    margin-top: 15px !important; /* Tạo khoảng hở phía trên cho thoáng */
+    margin-top: 15px !important; 
 }
 
 .preview-grid {
@@ -82,14 +82,14 @@ body {
 .preview-item {
     position: relative; border-radius: 8px; overflow: hidden;
     border: 1px solid var(--border-color);
-    aspect-ratio: 1/1; /* Mặc định vuông cho album */
+    aspect-ratio: 1/1; 
     background: #000;
 }
 .preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
 /* FIX ẢNH BÌA (THUMB) */
 #preview-thumb .preview-item {
-    aspect-ratio: 16/9 !important; /* Chữ nhật ngang */
+    aspect-ratio: 16/9 !important;
     width: 100%;
     border: 2px solid var(--accent-color);
 }
@@ -142,7 +142,7 @@ body {
     border-bottom-left-radius: 6px;
 }
 
-/* 8. FIX NÚT TRONG MODAL FOOTER (CHỐT ĐƠN) */
+/* 8. FIX NÚT TRONG MODAL FOOTER */
 .modal-footer {
     border-top: 1px solid rgba(255,255,255,0.1) !important;
     padding: 15px !important;
@@ -152,11 +152,10 @@ body {
     gap: 10px !important;
 }
 
-/* Ép kiểu cho các nút trong footer modal */
 .modal-footer .btn {
-    height: 40px !important;       /* Chiều cao cố định bằng nhau */
-    line-height: 1 !important;     /* Reset dòng để chữ căn giữa */
-    border-radius: 6px !important; /* Bo góc */
+    height: 40px !important;       
+    line-height: 1 !important;     
+    border-radius: 6px !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -166,28 +165,46 @@ body {
     transition: all 0.2s ease !important;
 }
 
-/* Nút Hủy (Màu xám tối) */
-.modal-footer .btn-dark {
-    background-color: #27272a !important;
-    color: #a1a1aa !important;
-}
-.modal-footer .btn-dark:hover {
-    background-color: #3f3f46 !important;
-    color: #fff !important;
+.modal-footer .btn-dark { background-color: #27272a !important; color: #a1a1aa !important; }
+.modal-footer .btn-dark:hover { background-color: #3f3f46 !important; color: #fff !important; }
+
+.modal-footer .btn-warning { background-color: var(--accent-color) !important; color: #000 !important; }
+.modal-footer .btn-warning:hover { background-color: var(--accent-hover) !important; transform: translateY(-2px); }
+
+/* --- RESPONSIVE MOBILE FIX (MỚI) --- */
+@media (max-width: 576px) {
+    /* 1. Chỉnh lại header thư viện trên mobile */
+    .card-table .d-flex {
+        flex-direction: column; /* Xếp dọc */
+        align-items: stretch !important; /* Kéo dãn full chiều ngang */
+        gap: 12px;
+    }
+
+    /* 2. Text hướng dẫn căn giữa */
+    .card-table .text-secondary.small {
+        text-align: center;
+        margin-bottom: 0;
+    }
+
+    /* 3. Nút xóa nhỏ gọn và full width */
+    .card-table .btn-danger {
+        width: 100%;
+        margin-left: 0 !important;
+        padding: 8px 15px !important;
+        font-size: 13px !important;
+    }
+
+    /* 4. Grid ảnh mobile: 3 ảnh 1 hàng cho dễ nhìn */
+    .lib-manage-grid {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 8px;
+    }
+    
+    /* Form card padding nhỏ lại */
+    .form-card { padding: 15px; }
 }
 
-/* Nút Sử dụng (Màu cam) */
-.modal-footer .btn-warning {
-    background-color: var(--accent-color) !important;
-    color: #000 !important;
-}
-.modal-footer .btn-warning:hover {
-    background-color: var(--accent-hover) !important;
-    transform: translateY(-2px);
-}
-
-/* Responsive */
-@media (max-width: 768px) {
+@media (min-width: 577px) and (max-width: 768px) {
     .lib-grid { grid-template-columns: repeat(3, 1fr); }
     .form-card { padding: 20px; }
 }

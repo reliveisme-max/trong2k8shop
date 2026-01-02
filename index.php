@@ -1,5 +1,5 @@
 <?php
-// index.php - ĐÃ NÂNG CẤP KHỐI THÔNG BÁO "NỔI BẬT THẬT SỰ"
+// index.php - ĐÃ CẬP NHẬT PHÂN TRANG (PAGINATION)
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
@@ -11,11 +11,25 @@ $typeFilter = ($viewMode == 'rent') ? 1 : 0;
 $filterParams = $_GET;
 $filterParams['type'] = $typeFilter;
 
-// GỌI HÀM LẤY DỮ LIỆU
-$result = getFilteredProducts($conn, $filterParams);
+// GỌI HÀM LẤY DỮ LIỆU (Lấy 12 acc mỗi trang)
+$result = getFilteredProducts($conn, $filterParams, 12);
 $products = $result['data'];
 $pageTitle = $result['title'];
 $keyword = $result['keyword'];
+
+// Lấy thông tin phân trang từ kết quả trả về
+$pagination = $result['pagination'];
+$currentPage = $pagination['current_page'];
+$totalPages = $pagination['total_pages'];
+$totalRecords = $pagination['total_records'];
+
+// Hàm hỗ trợ tạo Link phân trang (Giữ nguyên các bộ lọc cũ: min, max, q...)
+function createPageLink($page)
+{
+    $params = $_GET;
+    $params['page'] = $page;
+    return 'index.php?' . http_build_query($params);
+}
 ?>
 
 <!DOCTYPE html>
@@ -28,6 +42,34 @@ $keyword = $result['keyword'];
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="stylesheet" href="assets/css/style.css?v=<?= time() ?>">
+
+    <style>
+    /* CSS Riêng cho Phân trang (Màu cam) */
+    .pagination .page-link {
+        color: #333;
+        border: 1px solid #e5e7eb;
+        margin: 0 3px;
+        border-radius: 8px;
+        font-weight: 600;
+    }
+
+    .pagination .page-link:hover {
+        background-color: #fffbeb;
+        color: #f59e0b;
+        border-color: #f59e0b;
+    }
+
+    .pagination .page-item.active .page-link {
+        background-color: #f59e0b;
+        border-color: #f59e0b;
+        color: white;
+    }
+
+    .pagination .page-item.disabled .page-link {
+        color: #ccc;
+        background-color: #f9fafb;
+    }
+    </style>
 </head>
 
 <body>
@@ -52,7 +94,7 @@ $keyword = $result['keyword'];
 
     <div class="container py-5">
 
-        <!-- KHỐI THÔNG BÁO VIP PRO (ĐÃ SỬA) -->
+        <!-- KHỐI THÔNG BÁO VIP PRO -->
         <div class="notice-box p-4 mb-5">
             <div class="text-center mb-4">
                 <h3 class="notice-title mb-2">CHUYÊN MUA VÀ BÁN - GIAO LƯU ĐỔI ACC</h3>
@@ -63,21 +105,16 @@ $keyword = $result['keyword'];
 
             <div class="row justify-content-center">
                 <div class="col-12 col-md-10">
-                    <!-- Dòng 1: Cảnh báo đỏ -->
                     <div class="alert-item danger">
                         <i class="ph-fill ph-warning-circle"></i>
                         <span>Mình chỉ dùng duy nhất 1 Zalo: <strong class="fs-5">0984.074.897</strong> và <strong>không
                                 sử dụng Facebook</strong>.</span>
                     </div>
-
-                    <!-- Dòng 2: Thông tin xanh dương -->
                     <div class="alert-item info">
                         <i class="ph-fill ph-info"></i>
                         <span><strong>ACC Order:</strong> Là acc mình treo bán hộ - mua được và trả góp như acc bình
                             thường.</span>
                     </div>
-
-                    <!-- Dòng 3: Cam kết xanh lá -->
                     <div class="alert-item success">
                         <i class="ph-fill ph-check-circle"></i>
                         <span>Tất cả đều hỗ trợ trả góp - hỗ trợ đổi acc - thu mua acc giá cao - <strong>BẢO HÀNH HOÀN
@@ -86,8 +123,6 @@ $keyword = $result['keyword'];
                 </div>
             </div>
         </div>
-        <!-- KẾT THÚC KHỐI THÔNG BÁO -->
-
 
         <!-- 2. NÚT CHUYỂN ĐỔI (TAB) -->
         <div class="d-flex justify-content-center gap-3 mb-5">
@@ -116,7 +151,7 @@ $keyword = $result['keyword'];
             </form>
         </div>
 
-        <!-- 4. BỘ LỌC GIÁ (CHỈ HIỆN KHI MUA) -->
+        <!-- 4. BỘ LỌC GIÁ -->
         <div class="filter-section">
             <a href="index.php?view=<?= $viewMode ?>"
                 class="filter-pill <?= (!isset($_GET['min']) && !isset($_GET['status']) && empty($keyword)) ? 'active' : '' ?>">
@@ -149,7 +184,7 @@ $keyword = $result['keyword'];
                 <?= $viewMode == 'rent' ? 'Danh sách Acc Thuê' : 'Danh sách Acc Bán' ?>
                 <?= !empty($keyword) ? '- Tìm kiếm: ' . htmlspecialchars($keyword) : '' ?>
             </h5>
-            <span class="badge bg-secondary rounded-pill"><?= count($products) ?></span>
+            <span class="badge bg-secondary rounded-pill"><?= $totalRecords ?></span>
         </div>
 
         <!-- 6. DANH SÁCH SẢN PHẨM -->
@@ -185,13 +220,11 @@ $keyword = $result['keyword'];
                             <div class="product-meta">
                                 <div class="price-tag">
                                     <?= formatPrice($p['price']) ?>
-
                                     <?php if ($p['type'] == 1): ?>
                                     <small class="text-secondary fw-normal" style="font-size: 12px">
                                         <?= ($p['unit'] == 2) ? '/ ngày' : '/ giờ' ?>
                                     </small>
                                     <?php endif; ?>
-
                                 </div>
                                 <div class="btn-detail">CHI TIẾT</div>
                             </div>
@@ -208,6 +241,38 @@ $keyword = $result['keyword'];
             <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
             <p class="text-secondary fw-bold mt-3">Hiện chưa có acc nào trong mục này!</p>
             <a href="index.php?view=<?= $viewMode ?>" class="btn btn-dark rounded-pill px-4">Tải lại</a>
+        </div>
+        <?php endif; ?>
+
+        <!-- 7. THANH PHÂN TRANG (MỚI) -->
+        <?php if ($totalPages > 1): ?>
+        <div class="d-flex justify-content-center mt-5">
+            <nav>
+                <ul class="pagination">
+
+                    <!-- Nút Quay lại -->
+                    <li class="page-item <?= ($currentPage <= 1) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="<?= createPageLink($currentPage - 1) ?>">
+                            <i class="ph-bold ph-caret-left"></i>
+                        </a>
+                    </li>
+
+                    <!-- Danh sách trang -->
+                    <?php for ($i = 1; $i <= $totalPages; $i++): ?>
+                    <li class="page-item <?= ($i == $currentPage) ? 'active' : '' ?>">
+                        <a class="page-link" href="<?= createPageLink($i) ?>"><?= $i ?></a>
+                    </li>
+                    <?php endfor; ?>
+
+                    <!-- Nút Tiếp theo -->
+                    <li class="page-item <?= ($currentPage >= $totalPages) ? 'disabled' : '' ?>">
+                        <a class="page-link" href="<?= createPageLink($currentPage + 1) ?>">
+                            <i class="ph-bold ph-caret-right"></i>
+                        </a>
+                    </li>
+
+                </ul>
+            </nav>
         </div>
         <?php endif; ?>
 

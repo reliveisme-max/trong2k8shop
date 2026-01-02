@@ -1,7 +1,7 @@
 <?php
-// includes/functions.php - ĐÃ CẬP NHẬT LOGIC LỌC THEO TYPE (BÁN/THUÊ)
+// includes/functions.php - ĐÃ CẬP NHẬT LOGIC PHÂN TRANG
 
-// --- PHẦN 1: CÁC HÀM XỬ LÝ ẢNH & FORMAT ---
+// --- PHẦN 1: CÁC HÀM XỬ LÝ ẢNH & FORMAT (GIỮ NGUYÊN) ---
 
 function uploadImageToWebp($fileData)
 {
@@ -63,32 +63,32 @@ function formatPrice($price)
 }
 
 
-// --- PHẦN 2: CÁC HÀM LOGIC CHO FRONTEND ---
+// --- PHẦN 2: CÁC HÀM LOGIC CHO FRONTEND (CÓ PHÂN TRANG) ---
 
 /**
- * Hàm lấy danh sách Acc (Xử lý Tìm kiếm, Giá, Trạng thái và LOẠI ACC)
+ * Hàm lấy danh sách Acc (Xử lý Tìm kiếm, Giá, Trạng thái, Loại Acc VÀ PHÂN TRANG)
  */
-function getFilteredProducts($conn, $getRequest)
+function getFilteredProducts($conn, $getRequest, $limit = 12)
 {
     $whereArr = [];
     $params = [];
     $title = "Tất cả sản phẩm";
     $keyword = '';
 
-    // 0. LỌC THEO LOẠI (BÁN hay THUÊ) - QUAN TRỌNG
-    // Nếu không truyền type, mặc định là 0 (Bán)
-    $type = isset($getRequest['type']) ? (int)$getRequest['type'] : 0;
+    // 1. LẤY TRANG HIỆN TẠI
+    $page = isset($getRequest['page']) && is_numeric($getRequest['page']) ? (int)$getRequest['page'] : 1;
+    if ($page < 1) $page = 1;
 
-    // Thêm điều kiện SQL
+    // 2. XÂY DỰNG ĐIỀU KIỆN LỌC
+
+    // Loại Acc (Bán/Thuê)
+    $type = isset($getRequest['type']) ? (int)$getRequest['type'] : 0;
     $whereArr[] = "type = :type";
     $params[':type'] = $type;
 
-    // Cập nhật tiêu đề mặc định
-    if ($type == 1) {
-        $title = "Danh sách Acc Thuê";
-    }
+    if ($type == 1) $title = "Danh sách Acc Thuê";
 
-    // 1. TÌM KIẾM
+    // Tìm kiếm
     if (isset($getRequest['q']) && !empty($getRequest['q'])) {
         $keyword = $getRequest['q'];
         $whereArr[] = "title LIKE :keyword";
@@ -96,39 +96,61 @@ function getFilteredProducts($conn, $getRequest)
         $title = "Kết quả tìm kiếm: \"$keyword\"";
     }
 
-    // 2. LỌC THEO GIÁ
+    // Giá
     if (isset($getRequest['min'])) {
         $whereArr[] = "price >= :min";
         $params[':min'] = (int)$getRequest['min'];
     }
-    // Nếu có Max thì mới thêm điều kiện <= Max
     if (isset($getRequest['max'])) {
         $whereArr[] = "price <= :max";
         $params[':max'] = (int)$getRequest['max'];
     }
 
-    // 3. LỌC TRẠNG THÁI
+    // Trạng thái
     if (isset($getRequest['status']) && $getRequest['status'] == 'sold') {
         $whereArr[] = "status = 0";
-        // Đổi tiêu đề dựa theo loại
         $title = ($type == 1) ? "Acc Đang Thuê / Hết" : "Acc Đã Bán";
     } else {
-        // Mặc định: Chỉ hiện acc Đang Bán/Đang Rảnh (status = 1) trừ khi đang tìm kiếm
         if (empty($keyword)) {
             $whereArr[] = "status = 1";
         }
     }
 
-    // 4. THỰC THI
-    $sql = "SELECT * FROM products";
-    if (!empty($whereArr)) {
-        $sql .= " WHERE " . implode(" AND ", $whereArr);
+    // 3. ĐẾM TỔNG SỐ ACC (Để tính số trang)
+    $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
+    $countSql = "SELECT COUNT(*) FROM products $whereSql";
+
+    try {
+        $countStmt = $conn->prepare($countSql);
+        $countStmt->execute($params);
+        $totalRecords = $countStmt->fetchColumn();
+    } catch (PDOException $e) {
+        die("Lỗi đếm dữ liệu: " . $e->getMessage());
     }
-    $sql .= " ORDER BY id DESC";
+
+    // Tính toán phân trang
+    $totalPages = ceil($totalRecords / $limit);
+    // Nếu trang hiện tại lớn hơn tổng trang thì về trang cuối
+    if ($page > $totalPages && $totalPages > 0) $page = $totalPages;
+
+    $offset = ($page - 1) * $limit;
+
+    // 4. LẤY DỮ LIỆU CỦA TRANG HIỆN TẠI
+    $sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT :limit OFFSET :offset";
 
     try {
         $stmt = $conn->prepare($sql);
-        $stmt->execute($params);
+
+        // Bind các tham số lọc cũ
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val); // Mặc định là String hoặc Int tuỳ PHP đoán
+        }
+
+        // Bind tham số phân trang (BẮT BUỘC PHẢI LÀ INT)
+        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+
+        $stmt->execute();
         $products = $stmt->fetchAll();
     } catch (PDOException $e) {
         die("Lỗi truy vấn: " . $e->getMessage());
@@ -137,7 +159,12 @@ function getFilteredProducts($conn, $getRequest)
     return [
         'data' => $products,
         'title' => $title,
-        'keyword' => $keyword
+        'keyword' => $keyword,
+        'pagination' => [
+            'current_page' => $page,
+            'total_pages' => $totalPages,
+            'total_records' => $totalRecords
+        ]
     ];
 }
 
@@ -146,16 +173,9 @@ function getFilteredProducts($conn, $getRequest)
  */
 function checkActive($min, $max)
 {
-    // Kiểm tra Min trước
     if (isset($_GET['min']) && $_GET['min'] == $min) {
-        // Trường hợp 1: Có cả Min và Max (VD: 5m - 10m)
-        if ($max !== null && isset($_GET['max']) && $_GET['max'] == $max) {
-            return 'active';
-        }
-        // Trường hợp 2: Chỉ có Min, không có Max trên URL (VD: Trên 60m)
-        if ($max === null && !isset($_GET['max'])) {
-            return 'active';
-        }
+        if ($max !== null && isset($_GET['max']) && $_GET['max'] == $max) return 'active';
+        if ($max === null && !isset($_GET['max'])) return 'active';
     }
     return '';
 }
