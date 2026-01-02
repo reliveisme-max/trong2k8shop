@@ -1,5 +1,5 @@
 <?php
-// admin/process.php - XỬ LÝ CẢ THÊM MỚI (ADD) VÀ CẬP NHẬT (EDIT) - CÓ LOẠI ACC
+// admin/process.php - ĐÃ CẬP NHẬT LƯU ĐƠN VỊ TÍNH (UNIT)
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -10,6 +10,9 @@ if (isset($_POST['btn_submit'])) {
     $title = $_POST['title'];
     $desc  = $_POST['description'];
     $type  = (int)$_POST['type']; // 0: Bán, 1: Thuê
+
+    // Xử lý đơn vị tính (Nếu là Bán -> 0, Thuê -> Lấy từ form)
+    $unit = ($type == 0) ? 0 : (int)$_POST['unit'];
 
     // Xử lý giá tiền
     $priceRaw = str_replace(['.', ','], '', $_POST['price']);
@@ -42,13 +45,15 @@ if (isset($_POST['btn_submit'])) {
 
     // Lưu vào DB
     try {
-        $sql = "INSERT INTO products (title, price, type, thumb, gallery, description, status, created_at) 
-                VALUES (:title, :price, :type, :thumb, :gallery, :desc, 1, NOW())";
+        // Thêm cột unit vào câu lệnh INSERT
+        $sql = "INSERT INTO products (title, price, type, unit, thumb, gallery, description, status, created_at) 
+                VALUES (:title, :price, :type, :unit, :thumb, :gallery, :desc, 1, NOW())";
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             ':title' => $title,
             ':price' => $price,
             ':type' => $type,
+            ':unit' => $unit, // <-- Lưu đơn vị
             ':thumb' => $thumbName,
             ':gallery' => $galleryJson,
             ':desc' => $desc
@@ -67,7 +72,10 @@ elseif (isset($_POST['btn_update'])) {
     $title = $_POST['title'];
     $desc  = $_POST['description'];
     $status = (int)$_POST['status'];
-    $type   = (int)$_POST['type']; // Cập nhật loại
+    $type   = (int)$_POST['type'];
+
+    // Xử lý đơn vị tính
+    $unit = ($type == 0) ? 0 : (int)$_POST['unit'];
 
     // Xử lý giá tiền
     $priceRaw = str_replace(['.', ','], '', $_POST['price']);
@@ -108,8 +116,9 @@ elseif (isset($_POST['btn_update'])) {
 
     // Cập nhật Database
     try {
+        // Thêm update cột unit
         $sql = "UPDATE products SET 
-                title = :title, price = :price, type = :type,
+                title = :title, price = :price, type = :type, unit = :unit,
                 thumb = :thumb, gallery = :gallery, 
                 description = :desc, status = :status 
                 WHERE id = :id";
@@ -119,6 +128,7 @@ elseif (isset($_POST['btn_update'])) {
             ':title'   => $title,
             ':price' => $price,
             ':type' => $type,
+            ':unit' => $unit, // <-- Cập nhật đơn vị
             ':thumb'   => $thumbName,
             ':gallery' => $galleryJson,
             ':desc'    => $desc,

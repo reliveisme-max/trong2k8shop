@@ -1,4 +1,4 @@
-/* admin/assets/css/admin.css - FIX PLACEHOLDER */
+/* admin/assets/css/admin.css - FINAL FIXED VERSION */
 
 /* 1. CẤU HÌNH MÀU SẮC CHUNG */
 :root {
@@ -7,9 +7,9 @@
     --bg-input: #27272a;      /* Nền ô nhập liệu */
     --border-color: #3f3f46;  /* Viền xám */
     
-    --text-primary: #fafafa;  /* Trắng sáng (chữ chính) */
-    --text-secondary: #a1a1aa;/* Xám bạc (chữ phụ) */
-    --text-placeholder: #71717a; /* Xám vừa (cho placeholder) */
+    --text-primary: #fafafa;  /* Trắng sáng */
+    --text-secondary: #a1a1aa;/* Xám bạc */
+    --text-placeholder: #71717a; 
     
     --accent-color: #f59e0b;  /* Màu cam chủ đạo */
     --accent-hover: #d97706;
@@ -24,186 +24,166 @@ body {
 
 /* 2. NÚT QUAY LẠI */
 .btn-back {
-    text-decoration: none;
-    color: var(--text-secondary);
-    font-weight: 600;
-    display: inline-flex; align-items: center; gap: 8px;
-    padding: 8px 16px;
-    border-radius: 8px;
-    transition: 0.2s;
+    text-decoration: none; color: var(--text-secondary);
+    font-weight: 600; display: inline-flex; align-items: center; gap: 8px;
+    padding: 8px 16px; border-radius: 8px; transition: 0.2s;
 }
-.btn-back:hover {
-    background: var(--bg-card);
-    color: var(--text-primary);
-}
+.btn-back:hover { background: var(--bg-card); color: var(--text-primary); }
 
-/* 3. KHUNG FORM (CARD) */
+/* 3. FORM CARD */
 .form-card {
-    background: var(--bg-card);
-    border: 1px solid #27272a;
-    border-radius: 16px;
-    padding: 30px;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    background: var(--bg-card); border: 1px solid #27272a;
+    border-radius: 16px; padding: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.3);
 }
 
-/* 4. TÙY CHỈNH INPUT & TEXTAREA */
-.form-label {
-    color: var(--text-secondary);
-    font-weight: 500;
-    font-size: 13px;
-    margin-bottom: 8px;
-}
-
+/* 4. INPUT */
+.form-label { color: var(--text-secondary); font-weight: 500; font-size: 13px; margin-bottom: 8px; }
 .custom-input, .input-group-text {
     background-color: var(--bg-input) !important;
     border: 1px solid transparent !important;
-    color: var(--text-primary) !important; /* Màu chữ khi nhập */
-    padding: 12px 16px;
-    border-radius: 8px;
-    font-size: 14px;
+    color: var(--text-primary) !important;
+    padding: 12px 16px; border-radius: 8px; font-size: 14px;
 }
-
-/* --- FIX PLACEHOLDER (CHỮ GỢI Ý) --- */
-.custom-input::placeholder {
-    color: #71717a !important; /* Màu xám sáng hơn nền */
-    opacity: 1;
-}
-
-/* Hỗ trợ các trình duyệt khác nhau */
-.custom-input::-webkit-input-placeholder { color: #71717a; }
-.custom-input::-moz-placeholder { color: #71717a; }
-.custom-input:-ms-input-placeholder { color: #71717a; }
-
+.custom-input::placeholder { color: #71717a !important; opacity: 1; }
 .custom-input:focus {
-    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3); /* Viền sáng cam khi gõ */
+    box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.3);
     border-color: var(--accent-color) !important;
     background-color: #27272a !important;
 }
-
 .custom-addon {
     border-right: 1px solid rgba(255,255,255,0.1) !important;
-    color: var(--text-secondary) !important;
-    font-weight: 600;
+    color: var(--text-secondary) !important; font-weight: 600;
 }
 
-/* 5. KHUNG UPLOAD ẢNH */
+/* 5. UPLOAD BOX */
 .upload-box {
-    background: rgba(255,255,255,0.03);
-    border: 1px dashed var(--border-color);
-    border-radius: 10px;
-    height: 100px;
+    background: rgba(255,255,255,0.03); border: 1px dashed var(--border-color);
+    border-radius: 10px; height: 100px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: all 0.2s;
-    color: var(--text-secondary);
+    cursor: pointer; transition: all 0.2s; color: var(--text-secondary);
 }
-
 .upload-box i { font-size: 24px; margin-bottom: 5px; }
 .upload-box span { font-size: 12px; font-weight: 500; }
-
 .upload-box:hover {
-    border-color: var(--accent-color);
-    background: rgba(245, 158, 11, 0.05);
+    border-color: var(--accent-color); background: rgba(245, 158, 11, 0.05);
     color: var(--accent-color);
 }
+.library-box { border-style: solid; background: #27272a; }
 
-/* Style riêng cho nút thư viện */
-.library-box {
-    border-style: solid; /* Viền liền */
-    background: #27272a;
-}
-
-/* Preview Ảnh */
-#preview-thumb img {
-    width: 100%;
-    height: 200px;
-    object-fit: contain;
-    background: #000;
-    border-radius: 8px;
-    border: 1px solid var(--border-color);
+/* --- PREVIEW ẢNH (QUAN TRỌNG) --- */
+.preview-area, .preview-grid {
+    margin-top: 15px !important; /* Tạo khoảng hở phía trên cho thoáng */
 }
 
 .preview-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
-    gap: 8px;
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 10px;
 }
 
-.preview-grid img {
-    width: 100%;
-    aspect-ratio: 1/1;
-    object-fit: cover;
-    border-radius: 6px;
+.preview-item {
+    position: relative; border-radius: 8px; overflow: hidden;
     border: 1px solid var(--border-color);
+    aspect-ratio: 1/1; /* Mặc định vuông cho album */
+    background: #000;
 }
+.preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
 
-/* 6. NÚT SUBMIT */
+/* FIX ẢNH BÌA (THUMB) */
+#preview-thumb .preview-item {
+    aspect-ratio: 16/9 !important; /* Chữ nhật ngang */
+    width: 100%;
+    border: 2px solid var(--accent-color);
+}
+#preview-thumb .preview-item img { object-fit: cover !important; }
+#preview-thumb .btn-remove-img { width: 28px; height: 28px; font-size: 14px; top: 8px; right: 8px; }
+
+/* NÚT XÓA ẢNH (X ĐỎ) */
+.btn-remove-img {
+    position: absolute; top: 3px; right: 3px; width: 20px; height: 20px;
+    background: rgba(220, 38, 38, 0.95); color: white;
+    border-radius: 50%; border: none;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-size: 12px; z-index: 10;
+    transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+.btn-remove-img:hover { background: #ef4444; transform: scale(1.15); }
+
+/* 6. NÚT SUBMIT FORM */
 .btn-submit {
-    background: var(--accent-color);
-    color: #000;
-    border: none;
-    padding: 12px 30px;
-    border-radius: 8px;
-    font-weight: 700;
-    font-size: 15px;
-    display: flex; align-items: center; gap: 10px;
-    transition: 0.3s;
+    background: var(--accent-color); color: #000; border: none;
+    padding: 12px 30px; border-radius: 8px; font-weight: 700; font-size: 15px;
+    display: flex; align-items: center; gap: 10px; transition: 0.3s;
 }
-
 .btn-submit:hover {
-    background: var(--accent-hover);
-    transform: translateY(-2px);
+    background: var(--accent-hover); transform: translateY(-2px);
     box-shadow: 0 5px 15px rgba(245, 158, 11, 0.3);
 }
 
-/* 7. MODAL THƯ VIỆN (Dark Mode) */
-.custom-modal {
-    background: var(--bg-card);
-    border: 1px solid var(--border-color);
-}
+/* 7. MODAL THƯ VIỆN */
+.custom-modal { background: var(--bg-card); border: 1px solid var(--border-color); }
+.modal-header { border-bottom: 1px solid rgba(255,255,255,0.1); }
+.modal-title { font-weight: 700; }
 
-.library-scroll-area {
-    height: 500px;
-    overflow-y: auto;
-    background: var(--bg-body);
-}
-
-.lib-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 10px;
-}
+.library-scroll-area { height: 500px; overflow-y: auto; background: var(--bg-body); }
+.lib-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
 
 .lib-item {
-    position: relative;
-    cursor: pointer;
-    border-radius: 8px;
-    overflow: hidden;
-    aspect-ratio: 1/1;
-    border: 2px solid transparent;
+    position: relative; cursor: pointer; border-radius: 8px;
+    overflow: hidden; aspect-ratio: 1/1; border: 2px solid transparent;
 }
-
-.lib-item img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    transition: 0.2s;
-    opacity: 0.7;
-}
-
+.lib-item img { width: 100%; height: 100%; object-fit: cover; transition: 0.2s; opacity: 0.7; }
 .lib-item:hover img { opacity: 1; transform: scale(1.05); }
 
-/* Khi ảnh được chọn */
-.lib-item.selected {
-    border-color: var(--accent-color);
-}
+.lib-item.selected { border-color: var(--accent-color); }
 .lib-item.selected img { opacity: 1; }
 .lib-item.selected::after {
-    content: '\2713'; /* Dấu tích */
-    position: absolute; top: 0; right: 0;
+    content: '\2713'; position: absolute; top: 0; right: 0;
     background: var(--accent-color); color: #000;
-    padding: 2px 6px;
-    font-size: 12px; font-weight: bold;
+    padding: 2px 6px; font-size: 12px; font-weight: bold;
     border-bottom-left-radius: 6px;
+}
+
+/* 8. FIX NÚT TRONG MODAL FOOTER (CHỐT ĐƠN) */
+.modal-footer {
+    border-top: 1px solid rgba(255,255,255,0.1) !important;
+    padding: 15px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+}
+
+/* Ép kiểu cho các nút trong footer modal */
+.modal-footer .btn {
+    height: 40px !important;       /* Chiều cao cố định bằng nhau */
+    line-height: 1 !important;     /* Reset dòng để chữ căn giữa */
+    border-radius: 6px !important; /* Bo góc */
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-weight: 600 !important;
+    padding: 0 20px !important;
+    border: none !important;
+    transition: all 0.2s ease !important;
+}
+
+/* Nút Hủy (Màu xám tối) */
+.modal-footer .btn-dark {
+    background-color: #27272a !important;
+    color: #a1a1aa !important;
+}
+.modal-footer .btn-dark:hover {
+    background-color: #3f3f46 !important;
+    color: #fff !important;
+}
+
+/* Nút Sử dụng (Màu cam) */
+.modal-footer .btn-warning {
+    background-color: var(--accent-color) !important;
+    color: #000 !important;
+}
+.modal-footer .btn-warning:hover {
+    background-color: var(--accent-hover) !important;
+    transform: translateY(-2px);
 }
 
 /* Responsive */

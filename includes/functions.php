@@ -1,5 +1,5 @@
 <?php
-// includes/functions.php
+// includes/functions.php - ĐÃ CẬP NHẬT LOGIC LỌC THEO TYPE (BÁN/THUÊ)
 
 // --- PHẦN 1: CÁC HÀM XỬ LÝ ẢNH & FORMAT ---
 
@@ -66,7 +66,7 @@ function formatPrice($price)
 // --- PHẦN 2: CÁC HÀM LOGIC CHO FRONTEND ---
 
 /**
- * Hàm lấy danh sách Acc (Xử lý Tìm kiếm, Giá, Trạng thái)
+ * Hàm lấy danh sách Acc (Xử lý Tìm kiếm, Giá, Trạng thái và LOẠI ACC)
  */
 function getFilteredProducts($conn, $getRequest)
 {
@@ -74,6 +74,19 @@ function getFilteredProducts($conn, $getRequest)
     $params = [];
     $title = "Tất cả sản phẩm";
     $keyword = '';
+
+    // 0. LỌC THEO LOẠI (BÁN hay THUÊ) - QUAN TRỌNG
+    // Nếu không truyền type, mặc định là 0 (Bán)
+    $type = isset($getRequest['type']) ? (int)$getRequest['type'] : 0;
+
+    // Thêm điều kiện SQL
+    $whereArr[] = "type = :type";
+    $params[':type'] = $type;
+
+    // Cập nhật tiêu đề mặc định
+    if ($type == 1) {
+        $title = "Danh sách Acc Thuê";
+    }
 
     // 1. TÌM KIẾM
     if (isset($getRequest['q']) && !empty($getRequest['q'])) {
@@ -97,8 +110,10 @@ function getFilteredProducts($conn, $getRequest)
     // 3. LỌC TRẠNG THÁI
     if (isset($getRequest['status']) && $getRequest['status'] == 'sold') {
         $whereArr[] = "status = 0";
-        $title = "Acc Đã Bán";
+        // Đổi tiêu đề dựa theo loại
+        $title = ($type == 1) ? "Acc Đang Thuê / Hết" : "Acc Đã Bán";
     } else {
+        // Mặc định: Chỉ hiện acc Đang Bán/Đang Rảnh (status = 1) trừ khi đang tìm kiếm
         if (empty($keyword)) {
             $whereArr[] = "status = 1";
         }
@@ -127,7 +142,7 @@ function getFilteredProducts($conn, $getRequest)
 }
 
 /**
- * Hàm kiểm tra active bộ lọc (Đã sửa logic cho nút "Trên...")
+ * Hàm kiểm tra active bộ lọc
  */
 function checkActive($min, $max)
 {

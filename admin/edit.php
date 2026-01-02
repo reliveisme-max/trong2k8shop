@@ -1,6 +1,6 @@
 <?php
-// admin/edit.php - ĐÃ BẢO MẬT & FULL CHỨC NĂNG
-require_once 'auth.php'; // <--- CHỐT CHẶN BẢO VỆ
+// admin/edit.php - FINAL VERSION (FIX HTML MODAL BUTTONS)
+require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
@@ -20,10 +20,6 @@ $product = $stmt->fetch();
 if (!$product) {
     die("Acc không tồn tại!");
 }
-
-// Xử lý Gallery cũ
-$oldGallery = json_decode($product['gallery'], true);
-if (!is_array($oldGallery)) $oldGallery = [];
 ?>
 
 <!DOCTYPE html>
@@ -33,13 +29,10 @@ if (!is_array($oldGallery)) $oldGallery = [];
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sửa Acc #<?= $id ?></title>
-    <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Icon -->
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Font Inter -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- CSS Riêng -->
+    <!-- Thêm time() để xóa cache CSS ngay lập tức -->
     <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
 </head>
 
@@ -58,18 +51,43 @@ if (!is_array($oldGallery)) $oldGallery = [];
 
                 <form action="process.php" method="POST" enctype="multipart/form-data">
 
-                    <!-- INPUT ẨN: ID và Tên ảnh cũ -->
+                    <!-- INPUT ẨN -->
                     <input type="hidden" name="id" value="<?= $product['id'] ?>">
-                    <input type="hidden" name="old_thumb" value="<?= $product['thumb'] ?>">
-                    <input type="hidden" name="old_gallery" value='<?= $product['gallery'] ?>'>
 
-                    <!-- Input ẩn cho thư viện (nếu chọn mới) -->
+                    <!-- Dữ liệu ảnh sẽ được JS đổ vào đây -->
                     <input type="hidden" name="selected_thumb" id="inputSelectedThumb">
                     <input type="hidden" name="selected_gallery" id="inputSelectedGallery">
+
+                    <!-- Backup ảnh cũ -->
+                    <input type="hidden" name="old_thumb" value="<?= $product['thumb'] ?>">
+                    <input type="hidden" name="old_gallery" value='<?= $product['gallery'] ?>'>
 
                     <div class="row g-4">
                         <!-- CỘT TRÁI -->
                         <div class="col-12 col-lg-7">
+                            <div class="row">
+                                <div class="col-md-6 mb-4">
+                                    <label class="form-label">Loại sản phẩm</label>
+                                    <select name="type" id="typeSelect" class="form-control custom-input form-select"
+                                        onchange="toggleSettings()">
+                                        <option value="0" <?= $product['type'] == 0 ? 'selected' : '' ?>>Bán Acc (Vĩnh
+                                            viễn)</option>
+                                        <option value="1" <?= $product['type'] == 1 ? 'selected' : '' ?>>Cho Thuê Acc
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6 mb-4" id="unitContainer" style="display: none;">
+                                    <label class="form-label">Đơn vị tính</label>
+                                    <select name="unit" id="unitSelect" class="form-control custom-input form-select"
+                                        onchange="toggleSettings()">
+                                        <option value="1" <?= $product['unit'] == 1 ? 'selected' : '' ?>>Theo Giờ
+                                        </option>
+                                        <option value="2" <?= $product['unit'] == 2 ? 'selected' : '' ?>>Theo Ngày
+                                        </option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div class="mb-4">
                                 <label class="form-label">Tiêu đề Acc <span class="text-danger">*</span></label>
                                 <input type="text" name="title" class="form-control custom-input"
@@ -78,10 +96,10 @@ if (!is_array($oldGallery)) $oldGallery = [];
 
                             <div class="row">
                                 <div class="col-md-6 mb-4">
-                                    <label class="form-label">Giá bán (VNĐ) <span class="text-danger">*</span></label>
+                                    <label class="form-label" id="priceLabel">Giá bán (VNĐ) <span
+                                            class="text-danger">*</span></label>
                                     <div class="input-group">
                                         <span class="input-group-text custom-addon">₫</span>
-                                        <!-- Hiển thị giá có dấu chấm sẵn -->
                                         <input type="text" name="price" class="form-control custom-input"
                                             value="<?= number_format($product['price'], 0, '', '.') ?>" required
                                             oninput="formatCurrency(this)">
@@ -90,10 +108,10 @@ if (!is_array($oldGallery)) $oldGallery = [];
                                 <div class="col-md-6 mb-4">
                                     <label class="form-label">Trạng thái</label>
                                     <select name="status" class="form-control custom-input form-select">
-                                        <option value="1" <?= $product['status'] == 1 ? 'selected' : '' ?>>Đang bán
-                                        </option>
-                                        <option value="0" <?= $product['status'] == 0 ? 'selected' : '' ?>>Đã bán
-                                        </option>
+                                        <option value="1" <?= $product['status'] == 1 ? 'selected' : '' ?>>Đang bán /
+                                            Cho thuê</option>
+                                        <option value="0" <?= $product['status'] == 0 ? 'selected' : '' ?>>Đã bán / Hết
+                                            hạn thuê</option>
                                     </select>
                                 </div>
                             </div>
@@ -107,8 +125,6 @@ if (!is_array($oldGallery)) $oldGallery = [];
 
                         <!-- CỘT PHẢI: ẢNH -->
                         <div class="col-12 col-lg-5">
-
-                            <!-- 1. ẢNH BÌA -->
                             <div class="mb-4">
                                 <label class="form-label">Ảnh Bìa (Thumb)</label>
                                 <div class="image-upload-wrapper">
@@ -129,14 +145,10 @@ if (!is_array($oldGallery)) $oldGallery = [];
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- Hiển thị ảnh cũ -->
-                                    <div id="preview-thumb" class="mt-2 preview-area">
-                                        <img src="../uploads/<?= $product['thumb'] ?>" alt="Ảnh cũ">
-                                    </div>
+                                    <div id="preview-thumb" class="mt-2 preview-area"></div>
                                 </div>
                             </div>
 
-                            <!-- 2. ALBUM ẢNH -->
                             <div class="mb-4">
                                 <label class="form-label">Album ảnh chi tiết</label>
                                 <div class="image-upload-wrapper">
@@ -145,7 +157,7 @@ if (!is_array($oldGallery)) $oldGallery = [];
                                             <div class="upload-box"
                                                 onclick="document.getElementById('galleryInput').click()">
                                                 <i class="ph-duotone ph-plus-square"></i>
-                                                <span>Đổi album mới</span>
+                                                <span>Thêm nhiều ảnh</span>
                                             </div>
                                             <input type="file" id="galleryInput" name="gallery[]" accept="image/*"
                                                 multiple hidden onchange="previewGallery(this)">
@@ -157,26 +169,19 @@ if (!is_array($oldGallery)) $oldGallery = [];
                                             </div>
                                         </div>
                                     </div>
-                                    <!-- Hiển thị album cũ -->
-                                    <div id="preview-gallery" class="mt-2 preview-grid">
-                                        <?php foreach ($oldGallery as $img): ?>
-                                        <img src="../uploads/<?= $img ?>">
-                                        <?php endforeach; ?>
-                                    </div>
+                                    <div id="preview-gallery" class="mt-2 preview-grid"></div>
+
                                     <div class="text-secondary small mt-1 fst-italic">
-                                        * Lưu ý: Nếu chọn ảnh mới, toàn bộ ảnh cũ trong album sẽ bị thay thế.
+                                        * Bạn có thể xóa ảnh cũ hoặc thêm ảnh mới tùy ý.
                                     </div>
                                 </div>
                             </div>
-
                         </div>
                     </div>
 
                     <hr class="border-secondary opacity-25 my-4">
 
-                    <!-- NÚT UPDATE -->
                     <div class="d-flex justify-content-end">
-                        <!-- name="btn_update" để phân biệt với btn_submit (thêm mới) -->
                         <button type="submit" name="btn_update" class="btn-submit">
                             <i class="ph-bold ph-floppy-disk"></i> LƯU THAY ĐỔI
                         </button>
@@ -187,7 +192,7 @@ if (!is_array($oldGallery)) $oldGallery = [];
         </div>
     </div>
 
-    <!-- MODAL THƯ VIỆN (Giữ nguyên như Add) -->
+    <!-- MODAL THƯ VIỆN -->
     <div class="modal fade" id="libraryModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content custom-modal">
@@ -204,8 +209,11 @@ if (!is_array($oldGallery)) $oldGallery = [];
                         </div>
                     </div>
                 </div>
+
+                <!-- FOOTER ĐÃ CHỈNH LẠI CLASS CHUẨN -->
                 <div class="modal-footer border-top border-secondary border-opacity-25">
                     <button type="button" class="btn btn-dark" data-bs-dismiss="modal">Hủy</button>
+                    <!-- Thêm class btn btn-warning chuẩn -->
                     <button type="button" class="btn btn-warning fw-bold" onclick="confirmSelection()">Sử dụng ảnh đã
                         chọn</button>
                 </div>
@@ -216,6 +224,31 @@ if (!is_array($oldGallery)) $oldGallery = [];
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/admin-add.js?v=<?= time() ?>"></script>
 
+    <script>
+    function toggleSettings() {
+        const type = document.getElementById('typeSelect').value;
+        const unit = document.getElementById('unitSelect').value;
+        const unitContainer = document.getElementById('unitContainer');
+        const priceLabel = document.getElementById('priceLabel');
+
+        if (type == 1) {
+            unitContainer.style.display = 'block';
+            if (unit == 1) priceLabel.innerHTML = 'Giá thuê / Giờ (VNĐ) <span class="text-danger">*</span>';
+            else priceLabel.innerHTML = 'Giá thuê / Ngày (VNĐ) <span class="text-danger">*</span>';
+        } else {
+            unitContainer.style.display = 'none';
+            priceLabel.innerHTML = 'Giá bán (VNĐ) <span class="text-danger">*</span>';
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        toggleSettings();
+        initEditData(
+            '<?= $product['thumb'] ?>',
+            '<?= $product['gallery'] ? $product['gallery'] : "[]" ?>'
+        );
+    });
+    </script>
 </body>
 
 </html>

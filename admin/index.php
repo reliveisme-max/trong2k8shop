@@ -1,5 +1,5 @@
 <?php
-// admin/index.php - ĐÃ FIX NÚT BẤM ĐẸP HƠN
+// admin/index.php - ĐÃ THÊM MENU "QUẢN LÝ THƯ VIỆN"
 require_once 'auth.php'; // Chốt chặn bảo vệ
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -11,11 +11,16 @@ $products = $stmt->fetchAll();
 
 // THỐNG KÊ
 $totalAcc = count($products);
-$soldAcc = 0;
+$countSale = 0; // Số lượng Acc Bán
+$countRent = 0; // Số lượng Acc Thuê
+
 foreach ($products as $p) {
-    if ($p['status'] == 0) $soldAcc++;
+    if ($p['type'] == 1) {
+        $countRent++;
+    } else {
+        $countSale++;
+    }
 }
-$sellingAcc = $totalAcc - $soldAcc;
 ?>
 
 <!DOCTYPE html>
@@ -54,6 +59,11 @@ $sellingAcc = $totalAcc - $soldAcc;
                 <i class="ph-bold ph-plus"></i> Đăng Acc Mới
             </a>
 
+            <!-- MENU MỚI THÊM VÀO ĐÂY -->
+            <a href="library.php" class="menu-item">
+                <i class="ph-bold ph-images"></i> Quản lý Thư viện
+            </a>
+
             <div class="mt-auto">
                 <div class="border-top border-secondary opacity-25 mb-3"></div>
                 <a href="logout.php" class="menu-item text-danger fw-bold">
@@ -83,22 +93,22 @@ $sellingAcc = $totalAcc - $soldAcc;
 
         <!-- Stats Row -->
         <div class="row g-3 mb-4">
-            <div class="col-6 col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Tổng Acc</div>
-                    <div class="stat-value"><?= $totalAcc ?></div>
-                </div>
-            </div>
-            <div class="col-6 col-md-4">
-                <div class="stat-card">
-                    <div class="stat-label">Đang bán</div>
-                    <div class="stat-value text-success"><?= $sellingAcc ?></div>
-                </div>
-            </div>
             <div class="col-12 col-md-4">
                 <div class="stat-card">
-                    <div class="stat-label">Đã bán</div>
-                    <div class="stat-value text-danger"><?= $soldAcc ?></div>
+                    <div class="stat-label">Tổng Acc</div>
+                    <div class="stat-value text-white"><?= $totalAcc ?></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-label">Kho Bán</div>
+                    <div class="stat-value text-warning"><?= $countSale ?></div>
+                </div>
+            </div>
+            <div class="col-6 col-md-4">
+                <div class="stat-card">
+                    <div class="stat-label">Kho Thuê</div>
+                    <div class="stat-value text-info"><?= $countRent ?></div>
                 </div>
             </div>
         </div>
@@ -110,8 +120,8 @@ $sellingAcc = $totalAcc - $soldAcc;
                     <thead>
                         <tr>
                             <th class="ps-4">Hình ảnh</th>
-                            <th>Tên Acc</th>
-                            <th>Giá bán</th>
+                            <th>Thông tin Acc</th>
+                            <th>Giá tiền</th>
                             <th>Trạng thái</th>
                             <th class="text-end pe-4">Hành động</th>
                         </tr>
@@ -123,8 +133,17 @@ $sellingAcc = $totalAcc - $soldAcc;
                                 <img src="../uploads/<?= $p['thumb'] ?>" class="thumb-img" loading="lazy">
                             </td>
                             <td>
-                                <div class="fw-bold text-white mb-1">#<?= $p['id'] ?></div>
-                                <div class="text-secondary small text-truncate" style="max-width: 150px;">
+                                <div class="d-flex align-items-center gap-2 mb-1">
+                                    <span class="fw-bold text-white">#<?= $p['id'] ?></span>
+
+                                    <!-- HIỂN THỊ BADGE LOẠI ACC -->
+                                    <?php if ($p['type'] == 1): ?>
+                                    <span class="badge bg-info text-dark" style="font-size: 10px;">THUÊ</span>
+                                    <?php else: ?>
+                                    <span class="badge bg-warning text-dark" style="font-size: 10px;">BÁN</span>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="text-secondary small text-truncate" style="max-width: 200px;">
                                     <?= $p['title'] ?>
                                 </div>
                             </td>
@@ -133,25 +152,29 @@ $sellingAcc = $totalAcc - $soldAcc;
                             </td>
                             <td>
                                 <?php if ($p['status'] == 1): ?>
-                                <span class="status-badge status-active">Đang bán</span>
+                                <span class="status-badge status-active">Đang hiện</span>
+                                <?php else: ?>
+                                <?php if ($p['type'] == 1): ?>
+                                <span class="status-badge status-sold">Đang thuê / Ẩn</span>
                                 <?php else: ?>
                                 <span class="status-badge status-sold">Đã bán</span>
                                 <?php endif; ?>
+                                <?php endif; ?>
                             </td>
                             <td class="text-end pe-4">
-                                <!-- NÚT XEM (Class mới: btn-action-view) -->
+                                <!-- NÚT XEM -->
                                 <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank"
                                     class="btn-action btn-action-view me-2" title="Xem thử">
                                     <i class="ph-bold ph-eye fs-5"></i>
                                 </a>
 
-                                <!-- NÚT SỬA (Class mới: btn-action-edit) -->
+                                <!-- NÚT SỬA -->
                                 <a href="edit.php?id=<?= $p['id'] ?>" class="btn-action btn-action-edit me-2"
                                     title="Sửa">
                                     <i class="ph-bold ph-pencil-simple fs-5"></i>
                                 </a>
 
-                                <!-- NÚT XÓA (Class mới: btn-action-delete) -->
+                                <!-- NÚT XÓA -->
                                 <a href="delete.php?id=<?= $p['id'] ?>" class="btn-action btn-action-delete"
                                     onclick="return confirm('Xóa vĩnh viễn?')">
                                     <i class="ph-bold ph-trash fs-5"></i>
