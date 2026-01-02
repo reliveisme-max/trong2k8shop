@@ -1,54 +1,66 @@
 <?php
-// admin/process.php
-
-// 1. Gọi các file cấu hình và hàm hỗ trợ
+// admin/process.php - XỬ LÝ CẢ UPLOAD MỚI VÀ ẢNH CŨ
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
-// Kiểm tra xem người dùng có bấm nút "Đăng bán" không
 if (isset($_POST['btn_submit'])) {
 
-    // --- BƯỚC 1: NHẬN DỮ LIỆU CHỮ ---
+    // 1. NHẬN DỮ LIỆU CƠ BẢN
     $title = $_POST['title'];
-    $price = (int)$_POST['price']; // Ép kiểu số nguyên cho an toàn
+    $price = (int)$_POST['price'];
     $desc  = $_POST['description'];
 
-    // --- BƯỚC 2: XỬ LÝ ẢNH BÌA (THUMBNAIL) ---
-    // Gọi hàm convert WebP đã viết trong functions.php
-    $thumbName = uploadImageToWebp($_FILES['thumb']);
+    // 2. XỬ LÝ ẢNH BÌA (THUMB)
+    $thumbName = '';
 
-    if (!$thumbName) {
-        die("Lỗi: Không upload được ảnh bìa! Vui lòng kiểm tra lại (Chỉ nhận JPG/PNG).");
+    // Trường hợp A: Có upload ảnh mới
+    if (!empty($_FILES['thumb']['name'])) {
+        $uploaded = uploadImageToWebp($_FILES['thumb']);
+        if ($uploaded) {
+            $thumbName = $uploaded;
+        }
+    }
+    // Trường hợp B: Chọn từ thư viện (input hidden có giá trị)
+    elseif (!empty($_POST['selected_thumb'])) {
+        $thumbName = $_POST['selected_thumb'];
     }
 
-    // --- BƯỚC 3: XỬ LÝ ALBUM ẢNH (GALLERY) ---
-    $galleryNames = []; // Mảng chứa tên các file đã upload thành công
+    // Nếu cả 2 đều không có -> Lỗi
+    if (empty($thumbName)) {
+        die("Lỗi: Bạn chưa chọn ảnh bìa (Upload mới hoặc chọn từ thư viện)!");
+    }
 
-    // Kiểm tra xem có chọn ảnh album không
+    // 3. XỬ LÝ ALBUM ẢNH (GALLERY)
+    $galleryNames = [];
+
+    // Trường hợp A: Có upload album mới
     if (!empty($_FILES['gallery']['name'][0])) {
-        // Sắp xếp lại mảng $_FILES cho dễ lặp (Dùng hàm reArrayFiles đã viết)
         $fileList = reArrayFiles($_FILES['gallery']);
-
         foreach ($fileList as $file) {
-            // Upload từng ảnh một
             $uploaded = uploadImageToWebp($file);
             if ($uploaded) {
-                $galleryNames[] = $uploaded; // Thêm tên file vào mảng
+                $galleryNames[] = $uploaded;
             }
         }
     }
+    // Trường hợp B: Chọn từ thư viện (Input hidden trả về chuỗi JSON)
+    elseif (!empty($_POST['selected_gallery'])) {
+        // Decode chuỗi JSON từ input hidden
+        $selectedFromLib = json_decode($_POST['selected_gallery'], true);
+        if (is_array($selectedFromLib)) {
+            $galleryNames = $selectedFromLib;
+        }
+    }
 
-    // Chuyển mảng tên ảnh thành chuỗi JSON để lưu vào 1 ô trong Database
-    // VD: ["acc_1.webp", "acc_2.webp"]
+    // Encode lại thành JSON để lưu DB
     $galleryJson = json_encode($galleryNames);
 
-    // --- BƯỚC 4: LƯU VÀO DATABASE ---
+    // 4. LƯU VÀO DATABASE
     try {
         $sql = "INSERT INTO products (title, price, thumb, gallery, description, created_at) 
                 VALUES (:title, :price, :thumb, :gallery, :desc, NOW())";
 
         $stmt = $conn->prepare($sql);
-
         $data = [
             ':title'   => $title,
             ':price'   => $price,
@@ -58,7 +70,6 @@ if (isset($_POST['btn_submit'])) {
         ];
 
         if ($stmt->execute($data)) {
-            // Thành công -> Chuyển hướng về trang danh sách (index.php)
             header("Location: index.php?msg=success");
             exit;
         } else {
@@ -68,7 +79,6 @@ if (isset($_POST['btn_submit'])) {
         echo "Lỗi SQL: " . $e->getMessage();
     }
 } else {
-    // Nếu chưa bấm submit mà cố tình truy cập file này -> Đá về trang thêm
     header("Location: add.php");
     exit;
 }

@@ -1,9 +1,7 @@
 <?php
-// admin/add.php
+// admin/add.php - PHIÊN BẢN GỌN (TÁCH FILE CSS/JS)
 require_once '../includes/config.php';
 session_start();
-
-// (Tạm thời chưa check đăng nhập để bạn test cho dễ, sau này sẽ thêm vào sau)
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -11,171 +9,141 @@ session_start();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Acc Mới</title>
-    <!-- Nhúng Bootstrap 5 Online cho nhanh -->
+    <title>Đăng Acc Mới - Admin</title>
+    <!-- Bootstrap & Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <style>
-    /* CSS tối ưu cho Mobile */
-    body {
-        background-color: #f0f2f5;
-        padding-bottom: 80px;
-    }
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet">
 
-    .form-label {
-        font-weight: bold;
-        color: #333;
-    }
-
-    /* Khung upload ảnh đẹp */
-    .upload-area {
-        border: 2px dashed #cbd5e0;
-        background: #fff;
-        padding: 20px;
-        text-align: center;
-        border-radius: 12px;
-        cursor: pointer;
-        transition: 0.3s;
-    }
-
-    .upload-area:hover,
-    .upload-area.active {
-        border-color: #0d6efd;
-        background-color: #f1f8ff;
-    }
-
-    /* Hiển thị ảnh xem trước */
-    #preview-thumb img {
-        width: 100%;
-        height: auto;
-        border-radius: 8px;
-        margin-top: 10px;
-    }
-
-    #preview-gallery {
-        display: flex;
-        flex-wrap: wrap;
-        gap: 10px;
-        margin-top: 10px;
-    }
-
-    #preview-gallery img {
-        width: 70px;
-        height: 70px;
-        object-fit: cover;
-        border-radius: 6px;
-        border: 1px solid #ddd;
-    }
-
-    /* Nút đăng bài dính ở dưới màn hình điện thoại */
-    .sticky-bottom-btn {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        padding: 15px;
-        background: white;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-        z-index: 1000;
-    }
-    </style>
+    <!-- CSS TỰ VIẾT -->
+    <link rel="stylesheet" href="../assets/css/admin.css?v=<?= time() ?>">
 </head>
 
 <body>
 
-    <div class="container mt-3">
-        <h4 class="mb-3 text-center text-primary">ĐĂNG ACC PUBG</h4>
+    <div class="container mt-4">
+        <a href="index.php" class="text-decoration-none text-secondary fw-bold mb-3 d-inline-block">
+            <i class="ph-bold ph-arrow-left"></i> Quay lại
+        </a>
 
-        <!-- Form gửi dữ liệu sang process.php -->
-        <form action="process.php" method="POST" enctype="multipart/form-data">
+        <div class="form-container">
+            <h4 class="text-center text-warning fw-bold mb-4">ĐĂNG ACC MỚI</h4>
 
-            <!-- 1. Tên Acc -->
-            <div class="mb-3">
-                <label class="form-label">Tiêu đề Acc</label>
-                <input type="text" name="title" class="form-control form-control-lg" placeholder="VD: M416 Băng giá..."
-                    required>
-            </div>
+            <form action="process.php" method="POST" enctype="multipart/form-data">
 
-            <!-- 2. Giá tiền -->
-            <div class="mb-3">
-                <label class="form-label">Giá bán (VNĐ)</label>
-                <input type="number" name="price" class="form-control form-control-lg" placeholder="VD: 500000"
-                    required>
-            </div>
+                <!-- INPUT ẨN -->
+                <input type="hidden" name="selected_thumb" id="inputSelectedThumb">
+                <input type="hidden" name="selected_gallery" id="inputSelectedGallery">
 
-            <!-- 3. Ảnh đại diện (Bắt buộc) -->
-            <div class="mb-3">
-                <label class="form-label">Ảnh Bìa (1 ảnh)</label>
-                <div class="upload-area" onclick="document.getElementById('thumbInput').click()">
-                    <div id="preview-thumb-text">👉 Chạm để chọn ảnh bìa</div>
+                <!-- 1. Tiêu đề -->
+                <div class="mb-3">
+                    <label class="form-label">Tiêu đề Acc</label>
+                    <input type="text" name="title" class="form-control" placeholder="VD: M416 Băng giá..." required>
+                </div>
+
+                <!-- 2. Giá tiền -->
+                <div class="mb-3">
+                    <label class="form-label">Giá bán</label>
+                    <input type="number" name="price" class="form-control" placeholder="VNĐ" required>
+                </div>
+
+                <!-- 3. Ảnh Bìa -->
+                <div class="mb-3">
+                    <label class="form-label">Ảnh Bìa</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="upload-area" onclick="document.getElementById('thumbInput').click()">
+                                <i class="ph-fill ph-upload-simple fs-3 text-secondary"></i>
+                                <div class="small mt-1">Tải ảnh mới</div>
+                            </div>
+                            <input type="file" id="thumbInput" name="thumb" accept="image/*" hidden
+                                onchange="previewSingle(this)">
+                        </div>
+                        <div class="col-6">
+                            <div class="btn btn-library h-100 d-flex flex-column align-items-center justify-content-center"
+                                onclick="openLibrary('thumb')">
+                                <i class="ph-fill ph-images-square fs-3"></i>
+                                <div class="small mt-1">Chọn thư viện</div>
+                            </div>
+                        </div>
+                    </div>
                     <div id="preview-thumb"></div>
                 </div>
-                <!-- Input ẩn -->
-                <input type="file" id="thumbInput" name="thumb" accept="image/*" hidden required
-                    onchange="previewSingle(this)">
-            </div>
 
-            <!-- 4. Album ảnh (Chọn nhiều) -->
-            <div class="mb-3">
-                <label class="form-label">Album ảnh chi tiết</label>
-                <div class="upload-area" onclick="document.getElementById('galleryInput').click()">
-                    <div>👉 Chạm để chọn nhiều ảnh (Album)</div>
+                <!-- 4. Album Ảnh -->
+                <div class="mb-3">
+                    <label class="form-label">Album Chi Tiết</label>
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <div class="upload-area" onclick="document.getElementById('galleryInput').click()">
+                                <i class="ph-fill ph-upload-simple fs-3 text-secondary"></i>
+                                <div class="small mt-1">Tải nhiều ảnh</div>
+                            </div>
+                            <input type="file" id="galleryInput" name="gallery[]" accept="image/*" multiple hidden
+                                onchange="previewGallery(this)">
+                        </div>
+                        <div class="col-6">
+                            <div class="btn btn-library h-100 d-flex flex-column align-items-center justify-content-center"
+                                onclick="openLibrary('gallery')">
+                                <i class="ph-fill ph-stack fs-3"></i>
+                                <div class="small mt-1">Chọn thư viện</div>
+                            </div>
+                        </div>
+                    </div>
                     <div id="preview-gallery"></div>
                 </div>
-                <!-- Input ẩn - Có thuộc tính multiple -->
-                <input type="file" id="galleryInput" name="gallery[]" accept="image/*" multiple hidden
-                    onchange="previewGallery(this)">
-            </div>
 
-            <!-- 5. Mô tả -->
-            <div class="mb-3">
-                <label class="form-label">Mô tả thêm</label>
-                <textarea name="description" class="form-control" rows="3"
-                    placeholder="Rank, Skin súng, Login FB/Twitter..."></textarea>
-            </div>
+                <!-- 5. Mô tả -->
+                <div class="mb-3">
+                    <label class="form-label">Mô tả</label>
+                    <textarea name="description" class="form-control" rows="4"></textarea>
+                </div>
 
-            <!-- Nút Submit (Dính dưới đáy) -->
-            <div class="sticky-bottom-btn">
-                <button type="submit" name="btn_submit" class="btn btn-primary w-100 btn-lg">ĐĂNG BÁN NGAY</button>
-            </div>
-        </form>
+                <div class="sticky-footer">
+                    <button type="submit" name="btn_submit" class="btn btn-submit w-100 mw-100">
+                        ĐĂNG BÁN NGAY
+                    </button>
+                </div>
+
+            </form>
+        </div>
     </div>
 
-    <!-- JAVASCRIPT XỬ LÝ PREVIEW ẢNH (Không cần reload trang) -->
-    <script>
-    // 1. Xem trước ảnh bìa
-    function previewSingle(input) {
-        var previewZone = document.getElementById('preview-thumb');
-        var textZone = document.getElementById('preview-thumb-text');
+    <!-- MODAL THƯ VIỆN INFINITE SCROLL -->
+    <div class="modal fade" id="libraryModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold text-warning">Chọn ảnh từ thư viện</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
 
-        if (input.files && input.files[0]) {
-            var reader = new FileReader();
-            reader.onload = function(e) {
-                previewZone.innerHTML = '<img src="' + e.target.result + '">';
-                textZone.style.display = 'none'; // Ẩn chữ đi
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
+                <!-- Khu vực cuộn -->
+                <div class="library-scroll-area" id="scrollArea">
+                    <div class="lib-grid" id="libGrid"></div>
 
-    // 2. Xem trước Album
-    function previewGallery(input) {
-        var previewZone = document.getElementById('preview-gallery');
-        previewZone.innerHTML = ''; // Xóa ảnh cũ nếu chọn lại
+                    <div id="loadingIndicator" class="loading-zone" style="display: none;">
+                        <div class="spinner-border text-warning spinner-border-sm" role="status"></div>
+                        <span class="ms-2">Đang tải thêm ảnh...</span>
+                    </div>
 
-        if (input.files) {
-            // Biến files thành mảng để lặp
-            Array.from(input.files).forEach(file => {
-                var reader = new FileReader();
-                reader.onload = function(e) {
-                    var img = document.createElement('img');
-                    img.src = e.target.result;
-                    previewZone.appendChild(img);
-                }
-                reader.readAsDataURL(file);
-            });
-        }
-    }
-    </script>
+                    <div id="endOfData" class="loading-zone text-muted" style="display: none;">
+                        Đã hiển thị hết ảnh trong kho!
+                    </div>
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                    <button type="button" class="btn btn-primary fw-bold" onclick="confirmSelection()">Xác nhận
+                        chọn</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPT -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../assets/js/admin-add.js?v=<?= time() ?>"></script>
 
 </body>
 
