@@ -3,9 +3,6 @@
 
 // --- PHẦN 1: CÁC HÀM XỬ LÝ ẢNH & FORMAT ---
 
-/**
- * Upload và convert ảnh sang WebP
- */
 function uploadImageToWebp($fileData)
 {
     $targetDir = "../uploads/";
@@ -14,10 +11,8 @@ function uploadImageToWebp($fileData)
     $tempPath = $fileData['tmp_name'];
     $ext = strtolower(pathinfo($fileData['name'], PATHINFO_EXTENSION));
 
-    // Chỉ cho phép ảnh
     if (!in_array($ext, ['jpg', 'jpeg', 'png'])) return false;
 
-    // Load ảnh vào RAM
     $image = null;
     if ($ext == 'jpg' || $ext == 'jpeg') $image = imagecreatefromjpeg($tempPath);
     elseif ($ext == 'png') {
@@ -29,7 +24,6 @@ function uploadImageToWebp($fileData)
 
     if (!$image) return false;
 
-    // Resize nếu ảnh quá to (>1200px)
     $maxWidth = 1200;
     $origWidth = imagesx($image);
     if ($origWidth > $maxWidth) {
@@ -42,7 +36,6 @@ function uploadImageToWebp($fileData)
         $image = $newImage;
     }
 
-    // Lưu file WebP
     $newFileName = 'acc_' . uniqid() . '.webp';
     $result = imagewebp($image, $targetDir . $newFileName, 80);
     imagedestroy($image);
@@ -50,9 +43,6 @@ function uploadImageToWebp($fileData)
     return $result ? $newFileName : false;
 }
 
-/**
- * Sắp xếp lại mảng file khi upload nhiều ảnh
- */
 function reArrayFiles(&$file_post)
 {
     $file_ary = array();
@@ -66,9 +56,6 @@ function reArrayFiles(&$file_post)
     return $file_ary;
 }
 
-/**
- * Format giá tiền
- */
 function formatPrice($price)
 {
     if ($price <= 0) return "Liên hệ";
@@ -76,41 +63,53 @@ function formatPrice($price)
 }
 
 
-// --- PHẦN 2: CÁC HÀM LOGIC CHO FRONTEND (MỚI THÊM) ---
+// --- PHẦN 2: CÁC HÀM LOGIC CHO FRONTEND ---
 
 /**
- * Hàm lấy danh sách Acc có lọc theo điều kiện $_GET
- * @param PDO $conn Kết nối Database
- * @param array $getRequest Mảng $_GET từ URL
- * @return array [danh_sach_acc, tieu_de_hien_thi]
+ * Hàm lấy danh sách Acc (Xử lý Tìm kiếm, Giá, Trạng thái)
  */
 function getFilteredProducts($conn, $getRequest)
 {
     $whereArr = [];
     $params = [];
     $title = "Tất cả sản phẩm";
+    $keyword = '';
 
-    // 1. Lọc theo trạng thái (Mặc định chỉ hiện acc đang bán)
+    // 1. TÌM KIẾM
+    if (isset($getRequest['q']) && !empty($getRequest['q'])) {
+        $keyword = $getRequest['q'];
+        $whereArr[] = "title LIKE :keyword";
+        $params[':keyword'] = "%$keyword%";
+        $title = "Kết quả tìm kiếm: \"$keyword\"";
+    }
+
+    // 2. LỌC THEO GIÁ
+    if (isset($getRequest['min'])) {
+        $whereArr[] = "price >= :min";
+        $params[':min'] = (int)$getRequest['min'];
+    }
+    // Nếu có Max thì mới thêm điều kiện <= Max
+    if (isset($getRequest['max'])) {
+        $whereArr[] = "price <= :max";
+        $params[':max'] = (int)$getRequest['max'];
+    }
+
+    // 3. LỌC TRẠNG THÁI
     if (isset($getRequest['status']) && $getRequest['status'] == 'sold') {
         $whereArr[] = "status = 0";
         $title = "Acc Đã Bán";
     } else {
-        $whereArr[] = "status = 1";
+        if (empty($keyword)) {
+            $whereArr[] = "status = 1";
+        }
     }
 
-    // 2. Lọc theo Giá (Min - Max)
-    if (isset($getRequest['min'])) {
-        $whereArr[] = "price >= :min";
-        $params[':min'] = $getRequest['min'];
+    // 4. THỰC THI
+    $sql = "SELECT * FROM products";
+    if (!empty($whereArr)) {
+        $sql .= " WHERE " . implode(" AND ", $whereArr);
     }
-    if (isset($getRequest['max'])) {
-        $whereArr[] = "price <= :max";
-        $params[':max'] = $getRequest['max'];
-    }
-
-    // 3. Thực thi SQL
-    $whereClause = implode(' AND ', $whereArr);
-    $sql = "SELECT * FROM products WHERE $whereClause ORDER BY id DESC";
+    $sql .= " ORDER BY id DESC";
 
     try {
         $stmt = $conn->prepare($sql);
@@ -122,17 +121,26 @@ function getFilteredProducts($conn, $getRequest)
 
     return [
         'data' => $products,
-        'title' => $title
+        'title' => $title,
+        'keyword' => $keyword
     ];
 }
 
 /**
- * Hàm kiểm tra nút lọc nào đang active để đổi màu
+ * Hàm kiểm tra active bộ lọc (Đã sửa logic cho nút "Trên...")
  */
 function checkActive($min, $max)
 {
-    if (isset($_GET['min']) && $_GET['min'] == $min && isset($_GET['max']) && $_GET['max'] == $max) {
-        return 'active';
+    // Kiểm tra Min trước
+    if (isset($_GET['min']) && $_GET['min'] == $min) {
+        // Trường hợp 1: Có cả Min và Max (VD: 5m - 10m)
+        if ($max !== null && isset($_GET['max']) && $_GET['max'] == $max) {
+            return 'active';
+        }
+        // Trường hợp 2: Chỉ có Min, không có Max trên URL (VD: Trên 60m)
+        if ($max === null && !isset($_GET['max'])) {
+            return 'active';
+        }
     }
     return '';
 }

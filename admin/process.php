@@ -1,6 +1,6 @@
 <?php
-// admin/process.php - XỬ LÝ CẢ THÊM MỚI (ADD) VÀ CẬP NHẬT (EDIT)
-require_once 'auth.php'; // <--- CHỐT CHẶN BẢO VỆ
+// admin/process.php - XỬ LÝ CẢ THÊM MỚI (ADD) VÀ CẬP NHẬT (EDIT) - CÓ LOẠI ACC
+require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
@@ -9,8 +9,9 @@ if (isset($_POST['btn_submit'])) {
 
     $title = $_POST['title'];
     $desc  = $_POST['description'];
+    $type  = (int)$_POST['type']; // 0: Bán, 1: Thuê
 
-    // Xử lý giá tiền (Xóa dấu chấm)
+    // Xử lý giá tiền
     $priceRaw = str_replace(['.', ','], '', $_POST['price']);
     $price = (int)$priceRaw;
 
@@ -41,12 +42,13 @@ if (isset($_POST['btn_submit'])) {
 
     // Lưu vào DB
     try {
-        $sql = "INSERT INTO products (title, price, thumb, gallery, description, status, created_at) 
-                VALUES (:title, :price, :thumb, :gallery, :desc, 1, NOW())";
+        $sql = "INSERT INTO products (title, price, type, thumb, gallery, description, status, created_at) 
+                VALUES (:title, :price, :type, :thumb, :gallery, :desc, 1, NOW())";
         $stmt = $conn->prepare($sql);
         $stmt->execute([
             ':title' => $title,
             ':price' => $price,
+            ':type' => $type,
             ':thumb' => $thumbName,
             ':gallery' => $galleryJson,
             ':desc' => $desc
@@ -64,15 +66,15 @@ elseif (isset($_POST['btn_update'])) {
     $id = (int)$_POST['id'];
     $title = $_POST['title'];
     $desc  = $_POST['description'];
-    $status = (int)$_POST['status']; // Lấy trạng thái (0 hoặc 1)
+    $status = (int)$_POST['status'];
+    $type   = (int)$_POST['type']; // Cập nhật loại
 
-    // Xử lý giá tiền (Xóa dấu chấm)
+    // Xử lý giá tiền
     $priceRaw = str_replace(['.', ','], '', $_POST['price']);
     $price = (int)$priceRaw;
 
-    // A. Xử lý Ảnh Bìa (Logic: Upload Mới -> Chọn Thư Viện -> Giữ Ảnh Cũ)
-    $thumbName = $_POST['old_thumb']; // Mặc định giữ ảnh cũ
-
+    // Xử lý Ảnh
+    $thumbName = $_POST['old_thumb'];
     if (!empty($_FILES['thumb']['name'])) {
         $uploaded = uploadImageToWebp($_FILES['thumb']);
         if ($uploaded) $thumbName = $uploaded;
@@ -80,10 +82,8 @@ elseif (isset($_POST['btn_update'])) {
         $thumbName = $_POST['selected_thumb'];
     }
 
-    // B. Xử lý Album (Logic tương tự)
-    $galleryJson = $_POST['old_gallery']; // Mặc định giữ album cũ
-
-    // Kiểm tra nếu có upload mới hoặc chọn từ thư viện
+    // Xử lý Album
+    $galleryJson = $_POST['old_gallery'];
     $hasNewGallery = false;
     $newGalleryNames = [];
 
@@ -102,7 +102,6 @@ elseif (isset($_POST['btn_update'])) {
         }
     }
 
-    // Nếu có thay đổi gallery thì mới cập nhật JSON
     if ($hasNewGallery) {
         $galleryJson = json_encode($newGalleryNames);
     }
@@ -110,27 +109,24 @@ elseif (isset($_POST['btn_update'])) {
     // Cập nhật Database
     try {
         $sql = "UPDATE products SET 
-                title = :title, 
-                price = :price, 
-                thumb = :thumb, 
-                gallery = :gallery, 
-                description = :desc, 
-                status = :status 
+                title = :title, price = :price, type = :type,
+                thumb = :thumb, gallery = :gallery, 
+                description = :desc, status = :status 
                 WHERE id = :id";
 
         $stmt = $conn->prepare($sql);
         $data = [
             ':title'   => $title,
-            ':price'   => $price,
+            ':price' => $price,
+            ':type' => $type,
             ':thumb'   => $thumbName,
             ':gallery' => $galleryJson,
             ':desc'    => $desc,
             ':status'  => $status,
-            ':id'      => $id
+            ':id' => $id
         ];
 
         if ($stmt->execute($data)) {
-            // Cập nhật thành công -> Về trang danh sách
             header("Location: index.php?msg=updated");
             exit;
         } else {
@@ -140,7 +136,6 @@ elseif (isset($_POST['btn_update'])) {
         echo "Lỗi SQL: " . $e->getMessage();
     }
 } else {
-    // Không phải Add cũng không phải Update -> Về trang chủ admin
     header("Location: index.php");
     exit;
 }

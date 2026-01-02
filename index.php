@@ -1,53 +1,13 @@
 <?php
-// index.php - TRANG CHỦ (LIGHT MODE & SEARCH LOGIC)
+// index.php - ĐÃ SỬA BỘ LỌC GIÁ CHUẨN
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-// --- XỬ LÝ LỌC TÌM KIẾM & GIÁ ---
-$where = [];
-$params = [];
-
-// 1. Tìm kiếm từ khóa
-$keyword = '';
-if (isset($_GET['q']) && !empty($_GET['q'])) {
-    $keyword = $_GET['q'];
-    $where[] = "title LIKE :keyword";
-    $params[':keyword'] = "%$keyword%";
-}
-
-// 2. Lọc theo giá
-if (isset($_GET['min'])) {
-    $where[] = "price >= :min";
-    $params[':min'] = (int)$_GET['min'];
-}
-if (isset($_GET['max'])) {
-    $where[] = "price <= :max";
-    $params[':max'] = (int)$_GET['max'];
-}
-
-// 3. Lọc trạng thái (Mặc định hiện Đang bán, nếu chọn 'sold' thì hiện Đã bán)
-$statusTitle = "Acc Đang Bán";
-if (isset($_GET['status']) && $_GET['status'] == 'sold') {
-    $where[] = "status = 0";
-    $statusTitle = "Acc Đã Bán";
-} else {
-    // Mặc định không hiện acc đã bán trừ khi tìm kiếm
-    if (empty($keyword)) {
-        $where[] = "status = 1";
-    }
-}
-
-// Tạo câu SQL
-$sql = "SELECT * FROM products";
-if (!empty($where)) {
-    $sql .= " WHERE " . implode(" AND ", $where);
-}
-$sql .= " ORDER BY id DESC";
-
-// Truy vấn
-$stmt = $conn->prepare($sql);
-$stmt->execute($params);
-$products = $stmt->fetchAll();
+// GỌI HÀM LẤY DỮ LIỆU
+$result = getFilteredProducts($conn, $_GET);
+$products = $result['data'];
+$pageTitle = $result['title'];
+$keyword = $result['keyword'];
 ?>
 
 <!DOCTYPE html>
@@ -84,7 +44,7 @@ $products = $stmt->fetchAll();
 
     <div class="container py-5">
 
-        <!-- 2. THANH TÌM KIẾM (SEARCH) -->
+        <!-- 2. THANH TÌM KIẾM -->
         <div class="search-box">
             <form action="index.php" method="GET">
                 <input type="text" name="q" class="search-input" placeholder="Tìm kiếm tên acc, skin súng..."
@@ -95,26 +55,44 @@ $products = $stmt->fetchAll();
             </form>
         </div>
 
-        <!-- 3. BỘ LỌC GIÁ -->
+        <!-- 3. BỘ LỌC GIÁ (ĐÃ CẬP NHẬT THEO YÊU CẦU) -->
         <div class="filter-section">
+            <!-- Nút Tất cả -->
             <a href="index.php"
-                class="filter-pill <?= (!isset($_GET['min']) && !isset($_GET['status'])) ? 'active' : '' ?>">Tất cả</a>
-            <a href="index.php?min=0&max=1000000" class="filter-pill">Dưới 1 triệu</a>
-            <a href="index.php?min=1000000&max=5000000" class="filter-pill">1m - 5m</a>
-            <a href="index.php?min=5000000&max=10000000" class="filter-pill">5m - 10m</a>
-            <a href="index.php?min=10000000&max=999999999" class="filter-pill">Trên 10m</a>
-            <a href="index.php?status=sold" class="filter-pill" style="border-color: #ef4444; color: #ef4444;">Đã
-                Bán</a>
+                class="filter-pill <?= (!isset($_GET['min']) && !isset($_GET['status']) && empty($keyword)) ? 'active' : '' ?>">
+                Tất cả
+            </a>
+
+            <!-- Các khoảng giá mới -->
+            <a href="index.php?min=0&max=5000000" class="filter-pill <?= checkActive(0, 5000000) ?>">Dưới 5m</a>
+
+            <a href="index.php?min=5000000&max=10000000" class="filter-pill <?= checkActive(5000000, 10000000) ?>">5m -
+                10m</a>
+
+            <a href="index.php?min=10000000&max=20000000" class="filter-pill <?= checkActive(10000000, 20000000) ?>">10m
+                - 20m</a>
+
+            <a href="index.php?min=20000000&max=40000000" class="filter-pill <?= checkActive(20000000, 40000000) ?>">20m
+                - 40m</a>
+
+            <a href="index.php?min=40000000&max=60000000" class="filter-pill <?= checkActive(40000000, 60000000) ?>">40m
+                - 60m</a>
+
+            <!-- Trên 60m (Không để max để không bị giới hạn) -->
+            <a href="index.php?min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
+
+            <!-- Trạng thái -->
+            <a href="index.php?status=sold"
+                class="filter-pill <?= (isset($_GET['status']) && $_GET['status'] == 'sold') ? 'active' : '' ?>"
+                style="border-color: #ef4444; color: #ef4444;">
+                Đã Bán
+            </a>
         </div>
 
         <!-- 4. TIÊU ĐỀ DANH SÁCH -->
         <div class="d-flex align-items-center gap-2 mb-4">
             <h5 class="fw-bold m-0 text-uppercase">
-                <?php if ($keyword): ?>
-                Kết quả tìm kiếm: "<?= htmlspecialchars($keyword) ?>"
-                <?php else: ?>
-                <?= $statusTitle ?>
-                <?php endif; ?>
+                <?= htmlspecialchars($pageTitle) ?>
             </h5>
             <span class="badge bg-secondary rounded-pill"><?= count($products) ?></span>
         </div>
@@ -131,7 +109,6 @@ $products = $stmt->fetchAll();
                             <img src="uploads/<?= $p['thumb'] ?>" class="product-thumb" loading="lazy"
                                 alt="<?= $p['title'] ?>">
 
-                            <!-- Nếu status = 0 thì hiện overlay ĐÃ BÁN -->
                             <?php if ($p['status'] == 0): ?>
                             <div class="sold-overlay">ĐÃ BÁN</div>
                             <?php endif; ?>
@@ -156,7 +133,6 @@ $products = $stmt->fetchAll();
             <?php endforeach; ?>
         </div>
 
-        <!-- TRẠNG THÁI KHÔNG TÌM THẤY -->
         <?php if (count($products) == 0): ?>
         <div class="text-center py-5">
             <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
@@ -167,7 +143,6 @@ $products = $stmt->fetchAll();
 
     </div>
 
-    <!-- FOOTER -->
     <footer>
         <div class="container">
             <p class="mb-1 text-uppercase">&copy; 2024 TRỌNG 2K8 SHOP - UY TÍN TẠO NIỀM TIN</p>

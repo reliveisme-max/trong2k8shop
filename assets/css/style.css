@@ -1,266 +1,241 @@
-/* assets/css/style.css - PUBG SIGNATURE THEME (Orange & Dark) */
+/* assets/css/style.css - LIGHT MODE (PHIÊN BẢN CHUẨN NHẤT) */
 
-/* 1. CẤU HÌNH & FONT */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
 :root {
-    /* MÀU CAM PUBG CHỦ ĐẠO */
-    --primary-gradient: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); /* Cam -> Vàng đậm */
-    --primary-color: #f59e0b;
-    --primary-dark: #b45309;
+    --bg-body: #f3f4f6;       /* Nền xám rất nhạt (cho mắt dịu) */
+    --bg-card: #ffffff;       /* Nền trắng (cho các khối) */
     
-    /* MÀU NỀN & TEXT */
-    --header-bg: #111827; /* Đen nhám (Gunmetal) */
-    --bg-body: #f3f4f6;   /* Xám rất nhạt cho nền sạch */
-    --card-bg: #ffffff;
-    --text-main: #1f2937;
-    --text-light: #6b7280;
+    --text-main: #111827;     /* Chữ đen đậm */
+    --text-sub: #4b5563;      /* Chữ xám ghi */
     
-    /* MÀU GIÁ TIỀN & ACCENT */
-    --price-color: #dc2626; /* Đỏ tươi */
-    --success-color: #10b981;
+    --accent: #f59e0b;        /* Màu cam chủ đạo (PUBG) */
+    --accent-hover: #d97706;  /* Màu cam đậm khi hover */
+    --red-price: #dc2626;     /* Màu đỏ cho giá tiền */
+    
+    --border: #e5e7eb;        /* Viền xám nhạt */
+    --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); /* Bóng đổ nhẹ */
 }
 
 body {
     background-color: var(--bg-body);
     font-family: 'Inter', sans-serif;
     color: var(--text-main);
-    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
 a { text-decoration: none; }
+ul { padding: 0; margin: 0; list-style: none; }
 
-/* 2. HEADER ĐEN NGẦU */
+/* 1. HEADER (TRẮNG SẠCH) */
 .main-header {
-    background: var(--header-bg);
-    padding: 16px 0;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.3); /* Bóng đậm hơn */
-    position: sticky;
-    top: 0;
-    z-index: 1000;
-    border-bottom: 2px solid #f59e0b; /* Viền cam dưới header tạo điểm nhấn */
+    background: #fff;
+    border-top: 3px solid var(--accent); /* Điểm nhấn viền cam trên cùng */
+    border-bottom: 1px solid var(--border);
+    padding: 15px 0;
+    position: sticky; top: 0; z-index: 1000;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.03);
 }
 
 .logo-text {
-    font-weight: 900;
-    font-size: 24px;
-    color: #fff;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    display: flex;
-    align-items: center;
-    gap: 10px;
+    font-weight: 900; font-size: 22px; color: #111;
+    text-transform: uppercase; letter-spacing: 1px;
+    display: flex; align-items: center; gap: 8px;
 }
-/* Icon trong logo màu cam */
-.logo-text i { color: #f59e0b; filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.5)); }
+.logo-text i { color: var(--accent); font-size: 24px; }
 
-.nav-link {
-    color: #d1d5db;
-    font-weight: 700;
-    font-size: 13px;
-    text-transform: uppercase;
-    margin-left: 25px;
-    transition: 0.3s;
-}
-.nav-link:hover { color: #f59e0b; }
-
-/* Nút Thu Mua nổi bật (Màu vàng sáng) */
-.nav-link.highlight {
-    color: #fbbf24;
-    text-shadow: 0 0 10px rgba(251, 191, 36, 0.4);
-}
-
-/* 3. INTRO BOX (KHUNG THÔNG BÁO) - ĐÃ SỬA CHO ĐẸP HƠN */
-.intro-box {
-    background: #fff;
-    border-radius: 12px;
-    padding: 30px;
-    margin-bottom: 35px;
+/* 2. THANH TÌM KIẾM (SEARCH) */
+.search-box {
     position: relative;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-    border: 1px solid #e5e7eb;
-    text-align: center;
-    /* Thêm vạch màu cam trên đầu để nhấn mạnh */
-    border-top: 5px solid #f59e0b; 
+    max-width: 600px;
+    margin: 0 auto 30px auto;
 }
-
-.intro-title {
-    font-weight: 800;
-    color: #111827;
-    margin-bottom: 8px;
-    text-transform: uppercase;
-    letter-spacing: -0.5px;
-}
-
-.sub-title {
-    font-weight: 700;
-    color: #d97706; /* Màu cam đậm */
-    margin-bottom: 25px;
-    text-transform: uppercase;
-    font-size: 14px;
-}
-
-.policy-list li {
-    margin-bottom: 12px;
-    font-size: 15px;
-    color: #374151;
-    font-weight: 600;
-}
-
-/* BOX SỐ ĐIỆN THOẠI (Zalo) */
-.zalo-box {
-    display: inline-block;
-    background: #fef2f2; 
-    color: #ef4444;      
-    padding: 6px 18px;
+.search-input {
+    width: 100%;
+    padding: 12px 20px;
+    padding-right: 55px; /* Chừa chỗ cho nút tìm kiếm */
+    border: 2px solid #e5e7eb;
     border-radius: 50px;
-    font-weight: 800;
-    font-size: 19px; /* To hơn chút */
-    border: 2px solid #fee2e2;
-    margin-left: 8px;
-    cursor: pointer;
+    outline: none;
+    font-size: 15px;
     transition: 0.3s;
-    /* Hiệu ứng rung */
-    animation: pulse-red 2s infinite; 
-    box-shadow: 0 2px 10px rgba(239, 68, 68, 0.15);
+    background: #fff;
 }
-
-.zalo-box:hover {
-    background: #ef4444;
-    color: white;
-    transform: scale(1.05);
-    border-color: #ef4444;
+.search-input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1);
 }
-
-@keyframes pulse-red {
-    0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-    70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+.search-btn {
+    position: absolute; right: 6px; top: 5px;
+    width: 40px; height: 40px;
+    background: var(--accent);
+    color: #fff;
+    border: none; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+    cursor: pointer;
+    transition: 0.2s;
 }
+.search-btn:hover { background: var(--accent-hover); transform: scale(1.05); }
 
-/* 4. BỘ LỌC (FILTER PILLS) - STYLE CAM */
-.filter-section { margin-bottom: 40px; display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
-
+/* 3. BỘ LỌC (FILTER) */
+.filter-section {
+    display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-bottom: 40px;
+}
 .filter-pill {
     background: #fff;
     border: 1px solid #d1d5db;
-    color: #4b5563;
-    padding: 10px 22px;
-    border-radius: 8px; /* Bo góc vuông hơn chút cho nam tính */
-    font-size: 13px;
-    font-weight: 700;
-    transition: 0.2s;
+    color: var(--text-sub);
+    padding: 8px 20px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    transition: all 0.2s ease;
+    cursor: pointer;
 }
-
 .filter-pill:hover {
-    border-color: #f59e0b;
-    color: #d97706;
+    border-color: var(--accent);
+    color: var(--accent-hover);
     background: #fffbeb;
     transform: translateY(-2px);
 }
-
-/* Active State - MÀU CAM GRADIENT */
+/* Trạng thái Active (Đang chọn) */
 .filter-pill.active {
-    background: var(--primary-gradient);
-    color: white;
-    border: 1px solid #d97706;
-    box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3); /* Bóng cam */
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+    box-shadow: 0 4px 12px rgba(245, 158, 11, 0.3);
 }
 
-/* Các nút chức năng đặc biệt */
-.filter-pill.btn-shop { border-color: #10b981; color: #10b981; }
-.filter-pill.btn-shop.active { background: #10b981; color: white; border-color: #10b981; box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3); }
-
-.filter-pill.btn-sold { background: #374151; color: #9ca3af; border: none; }
-.filter-pill.btn-sold.active { background: #111827; color: white; box-shadow: none; }
-
-
-/* 5. PRODUCT CARD - GAMING STYLE */
+/* 4. THẺ SẢN PHẨM (PRODUCT CARD) */
 .product-card {
-    background: white;
+    background: #fff;
+    border: 1px solid var(--border);
     border-radius: 12px;
     overflow: hidden;
     transition: all 0.3s ease;
-    border: 1px solid #e5e7eb;
     height: 100%;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Hover: Viền cam + Nổi lên */
-.product-card:hover {
-    transform: translateY(-6px);
-    box-shadow: 0 15px 30px rgba(0, 0, 0, 0.08);
-    border-color: #f59e0b; /* Viền chuyển cam khi di chuột */
-}
-
-.product-thumb-container {
+    display: flex; flex-direction: column;
     position: relative;
-    width: 100%;
-    padding-top: 56.25%;
+}
+.product-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 15px 30px rgba(0,0,0,0.08);
+    border-color: var(--accent);
+}
+
+.product-thumb-box {
+    position: relative;
+    padding-top: 56.25%; /* Tỉ lệ 16:9 */
     overflow: hidden;
-    background: #111; /* Nền đen lúc ảnh chưa load */
+    background: #eee;
 }
-
 .product-thumb {
-    position: absolute;
-    top: 0; left: 0; width: 100%; height: 100%;
-    object-fit: cover;
-    transition: transform 0.6s ease;
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    object-fit: cover; transition: transform 0.5s ease;
 }
-.product-card:hover .product-thumb { transform: scale(1.05); }
+.product-card:hover .product-thumb { transform: scale(1.1); }
 
-/* Badge ID: Đen + Cam */
-.card-badge-id {
-    position: absolute;
-    top: 10px; left: 10px;
-    background: #111827;
-    color: #f59e0b; /* Chữ cam */
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 12px;
-    font-weight: 800;
-    z-index: 2;
-    border: 1px solid rgba(245, 158, 11, 0.3);
-}
-
-.sold-overlay {
-    background: rgba(17, 24, 39, 0.85); /* Đen đậm hơn */
+/* Badge ID */
+.card-id {
+    position: absolute; top: 10px; left: 10px;
+    background: rgba(0,0,0,0.7); 
+    color: #fff;
+    padding: 3px 10px; border-radius: 6px;
+    font-size: 11px; font-weight: 700;
     backdrop-filter: blur(2px);
-    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 2;
+}
+
+/* Overlay Đã Bán */
+.sold-overlay {
+    position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(255,255,255,0.8); /* Màu trắng mờ */
     display: flex; align-items: center; justify-content: center;
-    color: #9ca3af; font-weight: 800; font-size: 18px; text-transform: uppercase; z-index: 3;
+    color: #ef4444; font-weight: 900; font-size: 20px; text-transform: uppercase;
+    border: 3px solid #ef4444;
+    z-index: 3;
     letter-spacing: 2px;
+    transform: rotate(-5deg) scale(0.9); /* Nghiêng nhẹ cho nghệ */
 }
 
 .product-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
 
 .product-title {
-    font-size: 15px; font-weight: 700; color: #1f2937;
+    font-size: 15px; font-weight: 700; color: var(--text-main);
     margin-bottom: 10px; line-height: 1.5;
     display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+    height: 44px; /* Cố định chiều cao 2 dòng */
 }
 
 .product-meta {
     margin-top: auto;
     display: flex; justify-content: space-between; align-items: center;
-    padding-top: 12px;
-    border-top: 1px dashed #e5e7eb;
+    padding-top: 12px; border-top: 1px dashed var(--border);
 }
 
-.price-tag {
-    color: #dc2626;
-    font-weight: 800; font-size: 17px;
-}
+.price-tag { color: var(--red-price); font-weight: 800; font-size: 17px; }
 
-/* Nút Xem Chi Tiết */
 .btn-detail {
-    font-size: 12px; font-weight: 700;
-    padding: 8px 16px; border-radius: 6px;
-    background: #f3f4f6; color: #4b5563;
-    transition: 0.3s;
+    background: #f3f4f6; color: var(--text-sub);
+    padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700;
+    text-transform: uppercase; transition: 0.2s;
 }
 .product-card:hover .btn-detail {
-    background: #f59e0b; /* Nền cam */
-    color: white;
+    background: var(--accent); color: #fff;
+}
+
+/* 5. TRANG CHI TIẾT (DETAIL PAGE) */
+.detail-box {
+    background: #fff;
+    border-radius: 12px;
+    padding: 25px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+}
+
+.detail-thumb img {
+    width: 100%; height: auto;
+    border-radius: 8px; border: 1px solid var(--border);
+}
+
+.detail-price {
+    font-size: 32px; font-weight: 900; color: var(--red-price);
+    margin: 15px 0; letter-spacing: -1px;
+}
+
+.detail-desc {
+    background: #f9fafb;
+    padding: 20px; border-radius: 8px;
+    border: 1px dashed #d1d5db;
+    color: var(--text-sub);
+    line-height: 1.7; white-space: pre-line;
+    font-size: 15px;
+}
+
+/* Grid Album ảnh */
+.gallery-grid {
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); 
+    gap: 15px;
+    margin-top: 20px;
+}
+.gallery-item {
+    border-radius: 8px; overflow: hidden; border: 1px solid var(--border);
+    aspect-ratio: 16/9; cursor: pointer;
+}
+.gallery-item img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.4s ease;
+}
+.gallery-item:hover img { transform: scale(1.1); }
+
+/* 6. FOOTER */
+footer {
+    background: #fff; 
+    border-top: 1px solid var(--border);
+    padding: 40px 0; 
+    text-align: center; 
+    color: var(--text-sub);
+    font-size: 13px; font-weight: 600; 
+    margin-top: 60px;
 }
