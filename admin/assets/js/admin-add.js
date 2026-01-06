@@ -1,6 +1,6 @@
-// admin/assets/js/admin-add.js - FINAL V2: LOGIC KÉO THẢ & TRỘN ẢNH
+// admin/assets/js/admin-add.js - FINAL VERSION: LOGIC XỬ LÝ ẢNH & FORM
 
-let fileStore = {}; // Kho chứa file từ máy tính (key: uuid, value: File)
+let fileStore = {}; // Kho chứa file upload từ máy tính (key: uuid, value: File)
 let sortable; // Đối tượng SortableJS
 let currentPage = 1;
 let isLoading = false;
@@ -8,23 +8,28 @@ let hasMore = true;
 let selectedLibFiles = []; // Mảng tạm chứa file chọn từ modal thư viện
 
 document.addEventListener('DOMContentLoaded', function () {
-    // 1. Khởi tạo Kéo thả
+    // 1. Khởi tạo Kéo thả (SortableJS)
     const grid = document.getElementById('imageGrid');
-    sortable = new Sortable(grid, {
-        animation: 150,
-        ghostClass: 'sortable-ghost',
-        onEnd: function () {
-            // Sau khi kéo thả xong thì làm gì? (Hiện tại chưa cần xử lý ngay)
-        }
-    });
+    if (grid) {
+        sortable = new Sortable(grid, {
+            animation: 150,
+            ghostClass: 'sortable-ghost',
+            onEnd: function () {
+                // Kéo thả xong thì không cần làm gì đặc biệt, 
+                // vì khi submit ta sẽ quét lại DOM để lấy thứ tự mới nhất.
+            }
+        });
+    }
 
-    // 2. Lắng nghe sự kiện chọn file từ máy
+    // 2. Lắng nghe sự kiện chọn file từ máy tính
     const fileInput = document.getElementById('fileInput');
-    fileInput.addEventListener('change', function (e) {
-        handleLocalFiles(e.target.files);
-        // Reset input để chọn lại được file cũ nếu muốn
-        fileInput.value = '';
-    });
+    if (fileInput) {
+        fileInput.addEventListener('change', function (e) {
+            handleLocalFiles(e.target.files);
+            // Reset input để có thể chọn lại chính file đó nếu lỡ xóa
+            fileInput.value = '';
+        });
+    }
 
     // 3. Khởi tạo trạng thái Switch (Bán/Thuê)
     toggleSections();
@@ -43,9 +48,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 });
 
-// --- PHẦN 1: XỬ LÝ ẢNH (LOCAL & LIBRARY) ---
+// --- PHẦN 1: CÁC HÀM XỬ LÝ ẢNH (CORE) ---
 
-// Tạo ID ngẫu nhiên cho mỗi ảnh
+// Tạo ID ngẫu nhiên cho mỗi ảnh (để quản lý fileStore)
 function uuidv4() {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
         var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -60,7 +65,7 @@ function handleLocalFiles(files) {
         if (!file.type.startsWith('image/')) return;
 
         const uid = uuidv4();
-        fileStore[uid] = file; // Lưu vào kho
+        fileStore[uid] = file; // Lưu file vào kho bộ nhớ
 
         // Tạo giao diện preview
         const reader = new FileReader();
@@ -71,11 +76,11 @@ function handleLocalFiles(files) {
     });
 }
 
-// Xử lý file chọn từ Thư viện
+// Xử lý xác nhận chọn từ Thư viện
 function confirmLibrarySelection() {
     selectedLibFiles.forEach(filename => {
         const uid = uuidv4();
-        // Lưu filename vào dataset của div
+        // Thêm vào lưới với type='lib'
         addToGrid(uid, `../uploads/${filename}`, 'lib', filename);
     });
     
@@ -89,13 +94,13 @@ function confirmLibrarySelection() {
     modal.hide();
 }
 
-// Hàm chung: Vẽ ô ảnh vào lưới
+// Hàm chung: Vẽ ô ảnh vào lưới (Được dùng bởi cả Add mới và Edit cũ)
 function addToGrid(uid, src, type, filename = '') {
     const div = document.createElement('div');
     div.className = 'sortable-item';
-    div.dataset.id = uid;   // ID để tìm lại file
+    div.dataset.id = uid;    // ID định danh
     div.dataset.type = type; // 'local' hoặc 'lib'
-    if (filename) div.dataset.filename = filename; // Nếu là lib thì lưu tên file
+    if (filename) div.dataset.filename = filename; // Lưu tên file nếu là ảnh cũ/thư viện
 
     div.innerHTML = `
         <img src="${src}">
@@ -110,43 +115,49 @@ function addToGrid(uid, src, type, filename = '') {
 function removeImage(btn, uid) {
     const item = btn.closest('.sortable-item');
     item.remove();
-    // Nếu là file local thì xóa khỏi kho để giải phóng bộ nhớ (không bắt buộc nhưng tốt)
+    // Nếu là file local thì xóa khỏi kho để giải phóng bộ nhớ
     if (fileStore[uid]) delete fileStore[uid];
 }
 
-// --- PHẦN 2: LOGIC FORM & SUBMIT ---
+// --- PHẦN 2: LOGIC FORM & SUBMIT (QUAN TRỌNG NHẤT) ---
 
 function toggleSections() {
-    const isSell = document.getElementById('switchSell').checked;
-    const isRent = document.getElementById('switchRent').checked;
+    const switchSell = document.getElementById('switchSell');
+    const switchRent = document.getElementById('switchRent');
 
-    const sellSec = document.getElementById('sellSection');
-    const rentSec = document.getElementById('rentSection');
+    if(switchSell && switchRent) {
+        const isSell = switchSell.checked;
+        const isRent = switchRent.checked;
 
-    sellSec.style.display = isSell ? 'block' : 'none';
-    rentSec.style.display = isRent ? 'block' : 'none';
+        const sellSec = document.getElementById('sellSection');
+        const rentSec = document.getElementById('rentSection');
+
+        if(sellSec) sellSec.style.display = isSell ? 'block' : 'none';
+        if(rentSec) rentSec.style.display = isRent ? 'block' : 'none';
+    }
 }
 
 function submitForm() {
+    // 1. Kiểm tra ảnh
     const gridItems = document.querySelectorAll('.sortable-item');
     if (gridItems.length === 0) {
-        Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 ảnh!', 'error');
+        Swal.fire('Thiếu ảnh', 'Vui lòng chọn ít nhất 1 ảnh cho sản phẩm!', 'warning');
         return;
     }
 
-    // Kiểm tra chọn loại acc
+    // 2. Kiểm tra chế độ (Bán hoặc Thuê)
     const isSell = document.getElementById('switchSell').checked;
     const isRent = document.getElementById('switchRent').checked;
     if (!isSell && !isRent) {
-        Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 chế độ (Bán hoặc Thuê)!', 'error');
+        Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 chế độ (Bán hoặc Thuê)!', 'warning');
         return;
     }
 
-    // 1. TÁI CẤU TRÚC FILE INPUT (QUAN TRỌNG)
-    // Chúng ta cần sắp xếp lại fileStore theo đúng thứ tự trên giao diện
+    // 3. TÁI CẤU TRÚC DỮ LIỆU ĐỂ GỬI ĐI
+    // Chúng ta phải sắp xếp lại file theo đúng thứ tự trên màn hình (Do người dùng kéo thả)
     const dataTransfer = new DataTransfer();
-    const libImages = []; // Mảng chứa tên file thư viện
-    const orderMap = [];  // Mảng đánh dấu thứ tự: ['local', 'lib', 'local'...]
+    const libImages = []; // Danh sách tên file ảnh cũ/thư viện
+    const orderMap = [];  // Bản đồ thứ tự: ['local', 'lib', 'local', 'lib'...]
 
     gridItems.forEach(item => {
         const type = item.dataset.type;
@@ -155,23 +166,26 @@ function submitForm() {
         if (type === 'local') {
             const file = fileStore[uid];
             if (file) {
-                dataTransfer.items.add(file);
-                orderMap.push('local');
+                dataTransfer.items.add(file); // Thêm file vào input thật
+                orderMap.push('local');       // Đánh dấu vị trí này là file mới
             }
         } else if (type === 'lib') {
-            libImages.push(item.dataset.filename);
-            orderMap.push('lib');
+            libImages.push(item.dataset.filename); // Lưu tên file cũ
+            orderMap.push('lib');                  // Đánh dấu vị trí này là file cũ
         }
     });
 
-    // Cập nhật input file thật
+    // Cập nhật input file thật (để PHP nhận được $_FILES)
     document.getElementById('fileInput').files = dataTransfer.files;
     
-    // Cập nhật input hidden cho thư viện
+    // Cập nhật input hidden cho thư viện (để PHP nhận được tên ảnh cũ)
     document.getElementById('libraryInput').value = JSON.stringify(libImages);
 
-    // Tạo thêm input hidden để gửi Map thứ tự (giúp PHP biết đường mà lần)
-    // Ta sẽ tạo dynamic input vì form chưa có sẵn cái này
+    // Tạo input hidden cho Order Map (để PHP biết cách trộn)
+    // Xóa input cũ nếu có (đề phòng submit nhiều lần)
+    const oldMap = document.querySelector('input[name="order_map"]');
+    if (oldMap) oldMap.remove();
+
     let mapInput = document.createElement('input');
     mapInput.type = 'hidden';
     mapInput.name = 'order_map';
@@ -186,6 +200,7 @@ function submitForm() {
 
 function openLibrary() {
     const grid = document.getElementById('libGrid');
+    // Chỉ load lần đầu hoặc khi trống
     if (grid.innerHTML.trim() === '') fetchLibImages(1);
     
     const modal = new bootstrap.Modal(document.getElementById('libraryModal'));
@@ -204,11 +219,21 @@ async function fetchLibImages(page) {
             const grid = document.getElementById('libGrid');
             
             data.data.forEach(filename => {
+                // Tránh duplicate ID nếu load nhiều lần (dùng class thay vì id cho item)
                 const div = document.createElement('div');
-                div.className = 'lib-item';
-                div.innerHTML = `<img src="../uploads/${filename}" loading="lazy">`;
+                div.className = 'nft-card'; // Dùng class CSS mới
+                div.innerHTML = `
+                    <input type="checkbox" style="display:none"> <!-- Dummy input logic -->
+                    <img src="../uploads/${filename}" loading="lazy">
+                    <div class="nft-check-icon"><i class="ph-bold ph-check"></i></div>
+                `;
+                
+                // Logic chọn ảnh
                 div.onclick = function() {
-                    this.classList.toggle('selected');
+                    this.classList.toggle('selected'); // Toggle visual class
+                    const input = this.querySelector('input');
+                    input.checked = !input.checked; // Toggle checkbox ảo để CSS hoạt động (nếu dùng :has)
+
                     if (this.classList.contains('selected')) {
                         selectedLibFiles.push(filename);
                     } else {
@@ -225,7 +250,7 @@ async function fetchLibImages(page) {
     }
 }
 
-// --- PHẦN 4: TIỆN ÍCH KHÁC ---
+// --- PHẦN 4: TIỆN ÍCH ---
 
 function formatCurrency(input) {
     let value = input.value.replace(/\D/g, '');

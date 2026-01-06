@@ -1,32 +1,79 @@
 <?php
-// index.php - V3: HIỂN THỊ ĐÚNG GIÁ BÁN / GIÁ THUÊ
+// index.php - FINAL FIXED (ĐÃ XÓA HÀM TRÙNG)
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-// 1. CHẾ ĐỘ XEM (Mặc định là shop)
+// 1. CẤU HÌNH LOGIC LỌC DỮ LIỆU
 $viewMode = isset($_GET['view']) && $_GET['view'] == 'rent' ? 'rent' : 'shop';
+$keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
+$page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit    = 12;
+$offset   = ($page - 1) * $limit;
 
-// 2. LẤY DỮ LIỆU (Hàm này đã được sửa ở functions.php)
-// Truyền viewMode vào để nó tự lọc theo price hoặc price_rent
-$filterParams = $_GET;
-$filterParams['view'] = $viewMode;
+// Xây dựng điều kiện SQL
+$whereArr = [];
+$params = [];
 
-$result = getFilteredProducts($conn, $filterParams, 12);
-$products = $result['data'];
-$pageTitle = $result['title'];
-$keyword = $result['keyword'];
-
-$pagination = $result['pagination'];
-$currentPage = $pagination['current_page'];
-$totalPages = $pagination['total_pages'];
-$totalRecords = $pagination['total_records'];
-
-function createPageLink($page)
-{
-    $params = $_GET;
-    $params['page'] = $page;
-    return '?' . http_build_query($params);
+// A. Lọc theo chế độ xem (Quan trọng nhất)
+if ($viewMode == 'rent') {
+    $whereArr[] = "price_rent > 0"; // Tab Thuê: Chỉ hiện acc có giá thuê
+    $pageTitle = "Danh sách Acc Thuê";
+} else {
+    $whereArr[] = "price > 0";      // Tab Bán: Chỉ hiện acc có giá bán
+    $pageTitle = "Danh sách Acc Bán";
 }
+
+// B. Lọc theo tìm kiếm
+if ($keyword) {
+    $whereArr[] = "(title LIKE :kw OR id = :id)";
+    $params[':kw'] = "%$keyword%";
+    $params[':id'] = (int)$keyword;
+}
+
+// C. Lọc theo mức giá (Tương ứng với tab)
+$priceCol = ($viewMode == 'rent') ? 'price_rent' : 'price';
+if (isset($_GET['min'])) {
+    $whereArr[] = "$priceCol >= :min";
+    $params[':min'] = (int)$_GET['min'];
+}
+if (isset($_GET['max'])) {
+    $whereArr[] = "$priceCol <= :max";
+    $params[':max'] = (int)$_GET['max'];
+}
+
+// D. Chỉ hiện acc đang mở bán
+$whereArr[] = "status = 1";
+
+// 2. THỰC HIỆN TRUY VẤN
+$whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
+
+try {
+    // Đếm tổng số để phân trang
+    $stmtCount = $conn->prepare("SELECT COUNT(*) FROM products $whereSql");
+    $stmtCount->execute($params);
+    $totalRecords = $stmtCount->fetchColumn();
+
+    // Lấy dữ liệu sản phẩm
+    $sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT $limit OFFSET $offset";
+    $stmt = $conn->prepare($sql);
+    foreach ($params as $key => $val) $stmt->bindValue($key, $val);
+    $stmt->execute();
+    $products = $stmt->fetchAll();
+} catch (PDOException $e) {
+    die("Lỗi SQL: " . $e->getMessage());
+}
+
+$totalPages = ceil($totalRecords / $limit);
+
+// Hàm tạo link phân trang
+function createPageLink($p)
+{
+    $q = $_GET;
+    $q['page'] = $p;
+    return '?' . http_build_query($q);
+}
+
+// LƯU Ý: Đã xóa hàm checkActive() ở đây vì nó đã có trong includes/functions.php
 ?>
 
 <!DOCTYPE html>
@@ -69,7 +116,7 @@ function createPageLink($page)
             </div>
         </a>
 
-        <!-- SEARCH -->
+        <!-- THANH TÌM KIẾM -->
         <div class="search-box-modern">
             <form action="" method="GET" class="position-relative">
                 <?php if ($viewMode == 'rent'): ?><input type="hidden" name="view" value="rent"><?php endif; ?>
@@ -85,7 +132,7 @@ function createPageLink($page)
             </form>
         </div>
 
-        <!-- HEADER LIST -->
+        <!-- TIÊU ĐỀ & NÚT CHUYỂN CHẾ ĐỘ -->
         <div
             class="list-header-wrapper d-flex flex-column flex-md-row justify-content-between align-items-start align-items-md-center gap-3">
             <div class="d-flex align-items-center gap-2">
@@ -107,7 +154,7 @@ function createPageLink($page)
             </div>
         </div>
 
-        <!-- FILTERS -->
+        <!-- BỘ LỌC GIÁ -->
         <div class="filter-section">
             <a href="?view=<?= $viewMode ?>"
                 class="filter-pill <?= (!isset($_GET['min']) && empty($keyword)) ? 'active' : '' ?>">Tất cả</a>
@@ -122,16 +169,12 @@ function createPageLink($page)
             <?php endif; ?>
         </div>
 
-        <!-- PRODUCT LIST -->
+        <!-- DANH SÁCH SẢN PHẨM -->
         <div class="row g-4">
             <?php foreach ($products as $p): ?>
             <?php
-                // XÁC ĐỊNH GIÁ HIỂN THỊ
-                // Nếu đang xem tab Rent -> Lấy giá thuê
-                // Nếu đang xem tab Shop -> Lấy giá bán
+                // LOGIC HIỂN THỊ GIÁ THÔNG MINH
                 $displayPrice = ($viewMode == 'rent') ? $p['price_rent'] : $p['price'];
-
-                // Xác định nhãn đơn vị (chỉ cho thuê)
                 $unitLabel = '';
                 if ($viewMode == 'rent') {
                     $unitLabel = ($p['unit'] == 2) ? '/ ngày' : '/ giờ';
@@ -145,6 +188,7 @@ function createPageLink($page)
                             <span class="badge bg-danger bg-opacity-75 position-absolute top-0 end-0 m-2 fw-bold"
                                 style="z-index: 2">THUÊ</span>
                             <?php endif; ?>
+                            <!-- Ảnh bìa -->
                             <img src="uploads/<?= $p['thumb'] ?>" class="product-thumb" loading="lazy"
                                 alt="<?= $p['title'] ?>">
                         </div>
@@ -172,6 +216,7 @@ function createPageLink($page)
             <?php endforeach; ?>
         </div>
 
+        <!-- THÔNG BÁO NẾU KHÔNG CÓ ACC -->
         <?php if (count($products) == 0): ?>
         <div class="text-center py-5">
             <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
@@ -180,7 +225,7 @@ function createPageLink($page)
         </div>
         <?php endif; ?>
 
-        <!-- PAGINATION -->
+        <!-- PHÂN TRANG -->
         <?php if ($totalPages > 1): ?>
         <div class="d-flex justify-content-center mt-5">
             <nav>

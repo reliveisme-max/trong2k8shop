@@ -1,5 +1,5 @@
 <?php
-// includes/functions.php - FINAL V4: HỖ TRỢ ĐA GIÁ (BÁN & THUÊ) - FIXED
+// includes/functions.php - DEBUG VERSION (VẠCH TRẦN LỖI)
 
 // --- PHẦN 1: CÁC HÀM XỬ LÝ ẢNH ---
 function uploadImageToWebp($fileData)
@@ -69,7 +69,7 @@ function formatPrice($price)
     return number_format($price, 0, ',', '.') . ' đ';
 }
 
-// --- PHẦN 3: LOGIC LỌC SẢN PHẨM MỚI (QUAN TRỌNG NHẤT) ---
+// --- PHẦN 3: LOGIC LỌC SẢN PHẨM (DEBUG) ---
 function getFilteredProducts($conn, $getRequest, $limit = 12)
 {
     $whereArr = [];
@@ -84,14 +84,12 @@ function getFilteredProducts($conn, $getRequest, $limit = 12)
     // 2. Chế độ xem (Shop/Rent)
     $viewMode = isset($getRequest['view']) && $getRequest['view'] == 'rent' ? 'rent' : 'shop';
 
-    // 3. LOGIC LỌC MỚI (BỎ QUA CỘT TYPE, CHỈ SOI GIÁ)
+    // 3. LOGIC LỌC
     if ($viewMode == 'rent') {
-        // Tab Thuê: Chỉ lấy acc có Giá Thuê > 0
         $whereArr[] = "price_rent > 0";
         $title = "Danh sách Acc Thuê";
         $priceCol = 'price_rent';
     } else {
-        // Tab Bán: Chỉ lấy acc có Giá Bán > 0
         $whereArr[] = "price > 0";
         $title = "Danh sách Acc Bán";
         $priceCol = 'price';
@@ -113,7 +111,7 @@ function getFilteredProducts($conn, $getRequest, $limit = 12)
         $title = "Kết quả tìm kiếm: \"$keyword\"";
     }
 
-    // 5. Lọc theo giá (tương ứng tab hiện tại)
+    // 5. Lọc theo giá
     if (isset($getRequest['min'])) {
         $whereArr[] = "$priceCol >= :min";
         $params[':min'] = (int)$getRequest['min'];
@@ -123,12 +121,12 @@ function getFilteredProducts($conn, $getRequest, $limit = 12)
         $params[':max'] = (int)$getRequest['max'];
     }
 
-    // 6. Chỉ lấy acc đang mở bán (Status = 1)
+    // 6. Chỉ lấy acc đang mở bán
     if (empty($keyword)) {
         $whereArr[] = "status = 1";
     }
 
-    // --- THỰC THI SQL ---
+    // --- THỰC THI SQL (CÓ DEBUG) ---
     $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
     // Đếm tổng
@@ -146,16 +144,27 @@ function getFilteredProducts($conn, $getRequest, $limit = 12)
     $offset = ($page - 1) * $limit;
 
     // Lấy dữ liệu
-    $sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT :limit OFFSET :offset";
+    // Lưu ý: Đưa thẳng biến $limit và $offset vào chuỗi SQL để tránh lỗi bindValue trên một số phiên bản Xampp
+    $sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT $limit OFFSET $offset";
+
+    // --- [DEBUG START] ---
+    echo "<div style='background:#fffbeb; color:#92400e; padding:15px; border:2px dashed #f59e0b; margin:20px 0; border-radius:8px;'>";
+    echo "<h3 style='margin-top:0'>🕵️‍♂️ DEBUG SQL:</h3>";
+    echo "<b>1. Câu lệnh SQL đang chạy:</b> <br><code style='background:#fff; padding:5px; display:block; margin-top:5px; border:1px solid #e5e7eb'> " . $sql . "</code><br>";
+    echo "<b>2. Tham số (Params) gửi vào:</b> <pre>" . print_r($params, true) . "</pre>";
+    echo "<b>3. Tổng số dòng tìm thấy (Count):</b> " . $totalRecords . "<br>";
+    echo "</div>";
+    // --- [DEBUG END] ---
+
     try {
         $stmt = $conn->prepare($sql);
-        foreach ($params as $key => $val) $stmt->bindValue($key, $val);
-        $stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-        $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+        foreach ($params as $key => $val) {
+            $stmt->bindValue($key, $val);
+        }
         $stmt->execute();
         $products = $stmt->fetchAll();
     } catch (PDOException $e) {
-        die("Lỗi Lấy Data: " . $e->getMessage());
+        die("<h3 style='color:red'>❌ Lỗi SQL Chết người: " . $e->getMessage() . "</h3>");
     }
 
     return [

@@ -1,17 +1,17 @@
 <?php
-// admin/process.php - V2: XỬ LÝ KÉO THẢ ẢNH & ĐA GIÁ
+// admin/process.php - V3: XỬ LÝ FULL (THÊM + SỬA + ẢNH KÉO THẢ)
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
-// Kiểm tra xem có phải POST request không
+// Chỉ xử lý POST
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // 1. LẤY DỮ LIỆU CƠ BẢN
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0; // Dùng cho Edit (sau này)
+    // 1. LẤY DỮ LIỆU ĐẦU VÀO
+    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
     $title = trim($_POST['title']);
 
-    // Xử lý giá (Xóa dấu chấm, chuyển về số)
+    // Xử lý giá
     $priceRaw = isset($_POST['price']) ? str_replace(['.', ','], '', $_POST['price']) : 0;
     $price = (int)$priceRaw;
 
@@ -20,20 +20,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $unit = isset($_POST['unit']) ? (int)$_POST['unit'] : 0;
 
-    // Xác định Type (Để tương thích với bộ lọc cũ)
-    // Nếu chỉ có giá thuê -> Type = 1. Các trường hợp còn lại (Bán hoặc Bán+Thuê) -> Type = 0
+    // Trạng thái (Nếu checkbox được tích thì là 1, không thì là 0. Mặc định thêm mới là 1)
+    $status = isset($_POST['status']) ? 1 : ($id == 0 ? 1 : 0);
+
+    // Xác định Type (Legacy support)
     $type = ($priceRent > 0 && $price == 0) ? 1 : 0;
 
-    // 2. XỬ LÝ ẢNH (PHẦN QUAN TRỌNG NHẤT)
-    $finalImages = []; // Mảng chứa danh sách ảnh cuối cùng theo thứ tự
+    // 2. XỬ LÝ ẢNH (LOGIC PHỨC TẠP NHẤT)
+    $finalImages = [];
 
-    // Lấy bản đồ thứ tự từ JS
+    // Bản đồ thứ tự ảnh (từ JS gửi lên)
     $orderMap = isset($_POST['order_map']) ? json_decode($_POST['order_map'], true) : [];
 
-    // Lấy danh sách ảnh thư viện
+    // Danh sách tên ảnh từ thư viện (hoặc ảnh cũ)
     $libImages = isset($_POST['library_images']) ? json_decode($_POST['library_images'], true) : [];
 
-    // Chuẩn hóa danh sách file upload (nếu có)
+    // Danh sách ảnh mới upload từ máy
     $uploadedFiles = [];
     if (!empty($_FILES['gallery']['name'][0])) {
         $uploadedFiles = reArrayFiles($_FILES['gallery']);
@@ -42,11 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $localIndex = 0;
     $libIndex = 0;
 
-    // Duyệt qua bản đồ để sắp xếp
+    // Duyệt qua bản đồ để lắp ghép danh sách ảnh cuối cùng
     if (is_array($orderMap)) {
         foreach ($orderMap as $sourceType) {
             if ($sourceType === 'local') {
-                // Nếu là ảnh từ máy -> Upload và lấy tên mới
+                // Upload ảnh mới
                 if (isset($uploadedFiles[$localIndex])) {
                     $newFileName = uploadImageToWebp($uploadedFiles[$localIndex]);
                     if ($newFileName) {
@@ -55,7 +57,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $localIndex++;
                 }
             } elseif ($sourceType === 'lib') {
-                // Nếu là ảnh thư viện -> Lấy tên từ mảng lib
+                // Lấy tên ảnh cũ/thư viện
                 if (isset($libImages[$libIndex])) {
                     $finalImages[] = $libImages[$libIndex];
                     $libIndex++;
@@ -64,32 +66,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
-    // Nếu không có ảnh nào (Lỗi)
+    // Kiểm tra nếu không có ảnh nào
     if (empty($finalImages)) {
-        // Nếu đang update mà không chọn ảnh mới -> Giữ ảnh cũ (Logic cho Edit sau này)
-        // Nhưng ở đây là Add New -> Báo lỗi
-        if ($id == 0) {
-            die("Lỗi: Vui lòng chọn ít nhất 1 ảnh!");
-        }
+        // Nếu đang sửa mà lỡ tay xóa hết ảnh -> Báo lỗi ngay
+        // (Hoặc bạn có thể cho phép không ảnh, nhưng shop game thì nên bắt buộc)
+        die("Lỗi: Vui lòng chọn ít nhất 1 ảnh cho sản phẩm!");
     }
 
-    // Tách Thumb và Gallery
-    // Ảnh đầu tiên là Thumb
-    $thumb = isset($finalImages[0]) ? $finalImages[0] : '';
-
-    // Toàn bộ danh sách là Gallery (Để hiển thị chi tiết cho đầy đủ)
+    // Tách Thumb (Ảnh đầu tiên) và Gallery (Toàn bộ)
+    $thumb = $finalImages[0];
     $galleryJson = json_encode($finalImages);
 
 
-    // 3. THỰC HIỆN INSERT (THÊM MỚI)
-    // Kiểm tra xem là Thêm mới hay Cập nhật dựa vào ID (hoặc action)
-    // Ở file add.php hiện tại chưa gửi ID, nên mặc định là INSERT
+    // 3. THỰC HIỆN DATABASE (INSERT HOẶC UPDATE)
 
-    if ($id == 0) {
-        // --- ADD NEW ---
-        try {
+    try {
+        if ($id == 0) {
+            // --- THÊM MỚI (INSERT) ---
             $sql = "INSERT INTO products (title, price, price_rent, type, unit, thumb, gallery, status, created_at, views) 
-                    VALUES (:title, :price, :price_rent, :type, :unit, :thumb, :gallery, 1, NOW(), 0)";
+                    VALUES (:title, :price, :price_rent, :type, :unit, :thumb, :gallery, :status, NOW(), 0)";
 
             $stmt = $conn->prepare($sql);
             $stmt->execute([
@@ -99,17 +94,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ':type'       => $type,
                 ':unit'       => $unit,
                 ':thumb'      => $thumb,
-                ':gallery'    => $galleryJson
+                ':gallery'    => $galleryJson,
+                ':status'     => $status
             ]);
 
             header("Location: index.php?msg=added");
-            exit;
-        } catch (PDOException $e) {
-            die("Lỗi Database: " . $e->getMessage());
+        } else {
+            // --- CẬP NHẬT (UPDATE) ---
+            $sql = "UPDATE products SET 
+                    title = :title,
+                    price = :price,
+                    price_rent = :price_rent,
+                    type = :type,
+                    unit = :unit,
+                    thumb = :thumb,
+                    gallery = :gallery,
+                    status = :status
+                    WHERE id = :id";
+
+            $stmt = $conn->prepare($sql);
+            $stmt->execute([
+                ':title'      => $title,
+                ':price'      => $price,
+                ':price_rent' => $priceRent,
+                ':type'       => $type,
+                ':unit'       => $unit,
+                ':thumb'      => $thumb,
+                ':gallery'    => $galleryJson,
+                ':status'     => $status,
+                ':id'         => $id
+            ]);
+
+            header("Location: index.php?msg=updated");
         }
-    } else {
-        // --- UPDATE (Dành cho edit.php sau này) ---
-        // Phần này giữ chỗ để sau bạn nâng cấp file edit.php
+        exit;
+    } catch (PDOException $e) {
+        die("Lỗi Database: " . $e->getMessage());
     }
 } else {
     // Không phải POST -> Về trang chủ

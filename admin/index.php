@@ -1,50 +1,85 @@
 <?php
-// admin/index.php - FINAL: BỎ THANH TÌM KIẾM
+// admin/index.php - FINAL VERSION: UI MỚI + LOGIC ĐA GIÁ + XÓA NHIỀU
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
-// 1. XỬ LÝ LỌC (Chỉ còn lọc theo Loại)
-$typeFilter = isset($_GET['type']) ? $_GET['type'] : '';
+// --- 1. XỬ LÝ XÓA NHIỀU (BULK DELETE) ---
+if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
+    $ids = $_POST['selected_ids']; // Mảng các ID được chọn
+    $countDeleted = 0;
 
-$page = isset($_GET['page']) && is_numeric($_GET['page']) ? (int)$_GET['page'] : 1;
-if ($page < 1) $page = 1;
-$limit = 10;
-$offset = ($page - 1) * $limit;
+    foreach ($ids as $id) {
+        $id = (int)$id;
+        // Lấy thông tin ảnh để xóa file
+        $stmt = $conn->prepare("SELECT thumb, gallery FROM products WHERE id = :id");
+        $stmt->execute([':id' => $id]);
+        $prod = $stmt->fetch();
 
-// Xây dựng truy vấn
+        if ($prod) {
+            // Xóa ảnh
+            if (!empty($prod['thumb']) && file_exists("../uploads/" . $prod['thumb'])) {
+                @unlink("../uploads/" . $prod['thumb']);
+            }
+            $gallery = json_decode($prod['gallery'], true);
+            if (is_array($gallery)) {
+                foreach ($gallery as $g) {
+                    if (file_exists("../uploads/" . $g)) @unlink("../uploads/" . $g);
+                }
+            }
+            // Xóa DB
+            $conn->prepare("DELETE FROM products WHERE id = :id")->execute([':id' => $id]);
+            $countDeleted++;
+        }
+    }
+    header("Location: index.php?msg=deleted_multi&count=$countDeleted");
+    exit;
+}
+
+// --- 2. XỬ LÝ LỌC & TÌM KIẾM ---
+$viewType = isset($_GET['type']) ? $_GET['type'] : ''; // ''=All, 'sell', 'rent'
+$keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
+$page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$limit    = 10;
+$offset   = ($page - 1) * $limit;
+
+// Xây dựng câu lệnh SQL
 $whereArr = [];
 $params = [];
 
-if ($typeFilter !== '') {
-    $whereArr[] = "type = :type";
-    $params[':type'] = (int)$typeFilter;
+// Lọc theo loại (Dựa vào giá)
+if ($viewType === 'sell') {
+    $whereArr[] = "price > 0";
+} elseif ($viewType === 'rent') {
+    $whereArr[] = "price_rent > 0";
+}
+
+// Tìm kiếm
+if ($keyword) {
+    $whereArr[] = "(title LIKE :kw OR id = :id)";
+    $params[':kw'] = "%$keyword%";
+    $params[':id'] = (int)$keyword;
 }
 
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
 // Đếm tổng
-$sqlCount = "SELECT COUNT(*) FROM products $whereSql";
-$stmtCount = $conn->prepare($sqlCount);
+$stmtCount = $conn->prepare("SELECT COUNT(*) FROM products $whereSql");
 $stmtCount->execute($params);
-$totalFiltered = $stmtCount->fetchColumn();
-$totalPages = ceil($totalFiltered / $limit);
+$totalRecords = $stmtCount->fetchColumn();
+$totalPages = ceil($totalRecords / $limit);
 
-// Lấy dữ liệu
-$sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT :limit OFFSET :offset";
+// Lấy dữ liệu (Fix lỗi bindValue bằng cách đưa limit/offset thẳng vào chuỗi)
+$sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT $limit OFFSET $offset";
 $stmt = $conn->prepare($sql);
-foreach ($params as $key => $val) {
-    $stmt->bindValue($key, $val);
-}
-$stmt->bindValue(':limit', $limit, PDO::PARAM_INT);
-$stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+foreach ($params as $key => $val) $stmt->bindValue($key, $val);
 $stmt->execute();
 $products = $stmt->fetchAll();
 
 // Thống kê nhanh
 $totalAcc = $conn->query("SELECT COUNT(*) FROM products")->fetchColumn();
-$countSale = $conn->query("SELECT COUNT(*) FROM products WHERE type = 0")->fetchColumn();
-$countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetchColumn();
+$countSale = $conn->query("SELECT COUNT(*) FROM products WHERE price > 0")->fetchColumn();
+$countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")->fetchColumn();
 ?>
 
 <!DOCTYPE html>
@@ -52,7 +87,7 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetch
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Acc</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
@@ -85,19 +120,16 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetch
     <main class="main-content">
         <div class="content-container">
 
-            <!-- Header -->
             <div class="top-header">
-                <div class="d-flex align-items-center">
-                    <h4 class="m-0 text-dark">Xin chào, Admin 👋</h4>
-                </div>
+                <h4 class="m-0 text-dark">Quản lý sản phẩm</h4>
             </div>
 
-            <!-- STATS CARDS -->
+            <!-- THỐNG KÊ -->
             <div class="row g-4 mb-4">
                 <div class="col-12 col-md-4">
                     <div class="stat-card total">
                         <div class="stat-info">
-                            <div class="stat-label">Tổng sản phẩm</div>
+                            <div class="stat-label">Tổng Acc</div>
                             <div class="stat-value"><?= number_format($totalAcc) ?></div>
                         </div>
                         <div class="stat-icon"><i class="ph-duotone ph-shopping-cart"></i></div>
@@ -106,7 +138,7 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetch
                 <div class="col-6 col-md-4">
                     <div class="stat-card sale">
                         <div class="stat-info">
-                            <div class="stat-label">Kho Bán</div>
+                            <div class="stat-label">Acc Bán</div>
                             <div class="stat-value"><?= number_format($countSale) ?></div>
                         </div>
                         <div class="stat-icon"><i class="ph-duotone ph-tag"></i></div>
@@ -115,7 +147,7 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetch
                 <div class="col-6 col-md-4">
                     <div class="stat-card rent">
                         <div class="stat-info">
-                            <div class="stat-label">Kho Thuê</div>
+                            <div class="stat-label">Acc Thuê</div>
                             <div class="stat-value"><?= number_format($countRent) ?></div>
                         </div>
                         <div class="stat-icon"><i class="ph-duotone ph-clock"></i></div>
@@ -123,150 +155,134 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetch
                 </div>
             </div>
 
-            <!-- ACTION TOOLBAR (ĐÃ BỎ TÌM KIẾM) -->
-            <div class="action-toolbar">
-                <div class="toolbar-left">
-                    <div class="desktop-filters">
-                        <a href="index.php" class="filter-btn <?= $typeFilter === '' ? 'active' : '' ?>">Tất cả</a>
-                        <a href="index.php?type=0" class="filter-btn <?= $typeFilter === '0' ? 'active' : '' ?>">Bán</a>
-                        <a href="index.php?type=1"
-                            class="filter-btn <?= $typeFilter === '1' ? 'active' : '' ?>">Thuê</a>
-                    </div>
+            <!-- CÔNG CỤ: LỌC + TÌM KIẾM + THÊM -->
+            <div
+                class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 bg-white border rounded-4 shadow-sm">
+                <!-- Nhóm bên trái: Bộ lọc + Tìm kiếm -->
+                <div class="d-flex flex-wrap align-items-center gap-2">
+                    <a href="index.php"
+                        class="btn btn-sm rounded-pill fw-bold <?= $viewType == '' ? 'btn-dark' : 'btn-light border' ?>">Tất
+                        cả</a>
+                    <a href="index.php?type=sell"
+                        class="btn btn-sm rounded-pill fw-bold <?= $viewType == 'sell' ? 'btn-warning text-white' : 'btn-light border' ?>">Bán</a>
+                    <a href="index.php?type=rent"
+                        class="btn btn-sm rounded-pill fw-bold <?= $viewType == 'rent' ? 'btn-info text-white' : 'btn-light border' ?>">Thuê</a>
+
+                    <!-- Form Tìm kiếm -->
+                    <form action="" method="GET" class="d-flex align-items-center ms-2">
+                        <?php if ($viewType): ?><input type="hidden" name="type"
+                            value="<?= $viewType ?>"><?php endif; ?>
+                        <div class="input-group input-group-sm">
+                            <span class="input-group-text bg-white border-end-0"><i
+                                    class="ph-bold ph-magnifying-glass"></i></span>
+                            <input type="text" name="q" class="form-control border-start-0"
+                                placeholder="Tìm tên, mã số..." value="<?= htmlspecialchars($keyword) ?>">
+                        </div>
+                    </form>
                 </div>
-                <div class="toolbar-right d-none d-lg-block">
-                    <a href="add.php" class="btn-submit text-decoration-none d-flex align-items-center gap-2"
-                        style="padding: 10px 20px; font-size: 13px;">
-                        <i class="ph-bold ph-plus"></i> <span>ĐĂNG ACC</span>
+
+                <!-- Nhóm bên phải: Nút Đăng + Nút Xóa -->
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" onclick="submitDelete()" id="btnDeleteMulti"
+                        class="btn btn-danger btn-sm rounded-pill fw-bold" style="display:none;">
+                        <i class="ph-bold ph-trash"></i> Xóa (<span id="countSelect">0</span>)
+                    </button>
+                    <a href="add.php" class="btn btn-warning text-white btn-sm rounded-pill fw-bold px-3">
+                        <i class="ph-bold ph-plus"></i> Đăng Acc
                     </a>
                 </div>
             </div>
 
-            <!-- MOBILE FILTERS -->
-            <div class="mobile-filters">
-                <a href="index.php" class="chip <?= $typeFilter === '' ? 'active' : '' ?>">🔥 Tất cả</a>
-                <a href="index.php?type=0" class="chip <?= $typeFilter === '0' ? 'active' : '' ?>">🛒 Bán</a>
-                <a href="index.php?type=1" class="chip <?= $typeFilter === '1' ? 'active' : '' ?>">🕒 Thuê</a>
-            </div>
-
-            <!-- DESKTOP TABLE -->
-            <div class="card-table desktop-table">
-                <div class="table-responsive">
-                    <table class="table align-middle">
-                        <thead>
-                            <tr>
-                                <th class="ps-4">Ảnh</th>
-                                <th>Thông tin Acc</th>
-                                <th>Giá tiền</th>
-                                <th>Trạng thái</th>
-                                <th class="text-end pe-4">Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($products as $p): ?>
-                            <tr>
-                                <td class="ps-4" width="80"><img src="../uploads/<?= $p['thumb'] ?>" class="thumb-img"
-                                        loading="lazy"></td>
-                                <td>
-                                    <div class="fw-bold text-dark mb-1">
-                                        <span class="text-secondary me-1">#<?= $p['id'] ?></span> <?= $p['title'] ?>
-                                    </div>
-                                    <div class="text-secondary small">
-                                        <?= $p['type'] == 1 ? '<span class="badge bg-light text-primary border border-primary-subtle">THUÊ</span>' : '<span class="badge bg-light text-warning border border-warning-subtle">BÁN</span>' ?>
-                                    </div>
-                                </td>
-                                <td class="fw-bold text-success"><?= formatPrice($p['price']) ?></td>
-                                <td>
-                                    <?php if ($p['status'] == 1): ?>
-                                    <span class="badge-soft badge-soft-success">Đang bán</span>
-                                    <?php else: ?>
-                                    <span class="badge-soft badge-soft-danger">Đã bán/Ẩn</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="text-end pe-4">
-                                    <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank"
-                                        class="btn-action btn-action-view me-1"><i class="ph-bold ph-eye"></i></a>
-                                    <a href="edit.php?id=<?= $p['id'] ?>" class="btn-action btn-action-edit me-1"><i
-                                            class="ph-bold ph-pencil-simple"></i></a>
-                                    <a href="delete.php?id=<?= $p['id'] ?>" class="btn-action btn-action-delete"
-                                        onclick="confirmDelete(event, this.href)"><i class="ph-bold ph-trash"></i></a>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                            <?php if (empty($products)): ?>
-                            <tr>
-                                <td colspan="5" class="text-center py-5 text-secondary">Trống trơn!</td>
-                            </tr>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- MOBILE LIST -->
-            <div class="mobile-list-view">
-                <?php foreach ($products as $p): ?>
-                <div class="asset-card">
-                    <img src="../uploads/<?= $p['thumb'] ?>" class="asset-thumb" loading="lazy">
-                    <div class="asset-info">
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="asset-id">#<?= $p['id'] ?></span>
-                            <?php if ($p['type'] == 1): ?>
-                            <span class="badge bg-primary bg-opacity-10 text-primary border border-primary-subtle"
-                                style="font-size: 9px;">THUÊ</span>
-                            <?php endif; ?>
-                        </div>
-                        <div class="asset-title"><?= $p['title'] ?></div>
-                        <div class="d-flex align-items-center gap-2 mt-1">
-                            <span class="status-dot <?= $p['status'] == 1 ? 'active' : 'sold' ?>"></span>
-                            <span
-                                style="font-size: 11px; color: #6b7280;"><?= $p['status'] == 1 ? 'Đang bán' : 'Đã bán' ?></span>
-                        </div>
-                    </div>
-                    <div class="asset-actions">
-                        <div class="asset-price"><?= number_format($p['price'], 0, ',', '.') ?></div>
-                        <div class="dropdown">
-                            <button class="btn-more" type="button" data-bs-toggle="dropdown"><i
-                                    class="ph-bold ph-dots-three-vertical"></i></button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0">
-                                <li><a class="dropdown-item" href="../detail.php?id=<?= $p['id'] ?>" target="_blank"><i
-                                            class="ph-bold ph-eye me-2"></i> Xem</a></li>
-                                <li><a class="dropdown-item" href="edit.php?id=<?= $p['id'] ?>"><i
-                                            class="ph-bold ph-pencil-simple me-2"></i> Sửa</a></li>
-                                <li>
-                                    <hr class="dropdown-divider">
-                                </li>
-                                <li><a class="dropdown-item text-danger" href="delete.php?id=<?= $p['id'] ?>"
-                                        onclick="confirmDelete(event, this.href)"><i class="ph-bold ph-trash me-2"></i>
-                                        Xóa</a></li>
-                            </ul>
-                        </div>
+            <!-- TABLE -->
+            <form id="formMultiDelete" method="POST" action="">
+                <input type="hidden" name="btn_delete_multi" value="1">
+                <div class="card-table desktop-table">
+                    <div class="table-responsive">
+                        <table class="table align-middle table-hover">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4" width="40">
+                                        <input type="checkbox" class="form-check-input" onclick="toggleAll(this)">
+                                    </th>
+                                    <th width="80">Ảnh</th>
+                                    <th>Thông tin Acc</th>
+                                    <th>Giá tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th class="text-end pe-4">Thao tác</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($products as $p): ?>
+                                <tr>
+                                    <td class="ps-4">
+                                        <input type="checkbox" name="selected_ids[]" value="<?= $p['id'] ?>"
+                                            class="form-check-input item-check" onclick="updateDeleteBtn()">
+                                    </td>
+                                    <td><img src="../uploads/<?= $p['thumb'] ?>" class="thumb-img" loading="lazy"></td>
+                                    <td>
+                                        <div class="fw-bold text-dark">#<?= $p['id'] ?> - <?= $p['title'] ?></div>
+                                        <div class="d-flex gap-1 mt-1">
+                                            <?php if ($p['price'] > 0): ?>
+                                            <span class="badge badge-soft-success" style="font-size:10px">BÁN</span>
+                                            <?php endif; ?>
+                                            <?php if ($p['price_rent'] > 0): ?>
+                                            <span class="badge badge-soft-success"
+                                                style="font-size:10px; background:#eff6ff; color:#3b82f6">THUÊ</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </td>
+                                    <td>
+                                        <?php if ($p['price'] > 0): ?>
+                                        <div class="text-success fw-bold"><?= formatPrice($p['price']) ?></div>
+                                        <?php endif; ?>
+                                        <?php if ($p['price_rent'] > 0): ?>
+                                        <div class="text-primary small">
+                                            <?= formatPrice($p['price_rent']) ?>/<?= $p['unit'] == 2 ? 'ngày' : 'giờ' ?>
+                                        </div>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?= $p['status'] == 1
+                                                ? '<span class="badge-soft badge-soft-success">Đang bán</span>'
+                                                : '<span class="badge-soft badge-soft-danger">Đã bán/Ẩn</span>' ?>
+                                    </td>
+                                    <td class="text-end pe-4">
+                                        <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank"
+                                            class="btn-action btn-action-view me-1"><i class="ph-bold ph-eye"></i></a>
+                                        <a href="edit.php?id=<?= $p['id'] ?>" class="btn-action btn-action-edit me-1"><i
+                                                class="ph-bold ph-pencil-simple"></i></a>
+                                        <a href="delete.php?id=<?= $p['id'] ?>" class="btn-action btn-action-delete"
+                                            onclick="return confirmDelete(event, this.href)"><i
+                                                class="ph-bold ph-trash"></i></a>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                                <?php if (empty($products)): ?>
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-secondary">Không tìm thấy dữ liệu</td>
+                                </tr>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
-                <?php endforeach; ?>
-            </div>
+            </form>
 
             <!-- PAGINATION -->
+            <?php if ($totalPages > 1): ?>
             <div class="d-flex justify-content-center py-4">
-                <?php if ($totalPages > 1): ?>
                 <nav>
-                    <ul class="pagination mb-0">
-                        <li class="page-item <?= ($page <= 1) ? 'disabled' : '' ?>">
-                            <a class="page-link" href="?page=<?= $page - 1 ?>&type=<?= $typeFilter ?>"><i
-                                    class="ph-bold ph-caret-left"></i></a>
-                        </li>
+                    <ul class="pagination">
                         <?php for ($i = 1; $i <= $totalPages; $i++): ?>
                         <li class="page-item <?= ($i == $page) ? 'active' : '' ?>">
-                            <a class="page-link" href="?page=<?= $i ?>&type=<?= $typeFilter ?>"><?= $i ?></a>
+                            <a class="page-link"
+                                href="?page=<?= $i ?>&type=<?= $viewType ?>&q=<?= $keyword ?>"><?= $i ?></a>
                         </li>
                         <?php endfor; ?>
-                        <li class="page-item <?= ($page >= $totalPages) ? 'disabled' : '' ?>">
-                            <a class="page-link" href="?page=<?= $page + 1 ?>&type=<?= $typeFilter ?>"><i
-                                    class="ph-bold ph-caret-right"></i></a>
-                        </li>
                     </ul>
                 </nav>
-                <?php endif; ?>
             </div>
+            <?php endif; ?>
 
         </div>
     </main>
@@ -282,38 +298,53 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE type = 1")->fetch
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+    // Thông báo SweetAlert
     const urlParams = new URLSearchParams(window.location.search);
-    const msg = urlParams.get('msg');
-    if (msg === 'added') Swal.fire({
-        icon: 'success',
-        title: 'Thành công',
-        text: 'Đã thêm mới.'
-    });
-    if (msg === 'updated') Swal.fire({
-        icon: 'success',
-        title: 'Thành công',
-        text: 'Cập nhật xong.'
-    });
-    if (msg === 'deleted') Swal.fire({
-        icon: 'success',
-        title: 'Thành công',
-        text: 'Đã xóa.'
-    });
+    if (urlParams.get('msg') === 'deleted_multi') {
+        Swal.fire('Thành công', `Đã xóa ${urlParams.get('count')} Acc`, 'success');
+        window.history.replaceState({}, document.title, "index.php");
+    }
 
-    function confirmDelete(event, url) {
-        event.preventDefault();
+    // Checkbox Logic
+    function toggleAll(source) {
+        document.querySelectorAll('.item-check').forEach(c => c.checked = source.checked);
+        updateDeleteBtn();
+    }
+
+    function updateDeleteBtn() {
+        const count = document.querySelectorAll('.item-check:checked').length;
+        const btn = document.getElementById('btnDeleteMulti');
+        document.getElementById('countSelect').innerText = count;
+        btn.style.display = count > 0 ? 'inline-block' : 'none';
+    }
+
+    function submitDelete() {
         Swal.fire({
-            title: 'Xóa Acc này?',
-            text: "Không thể hoàn tác!",
+            title: 'Xác nhận xóa?',
+            text: "Các Acc đã chọn sẽ bị xóa vĩnh viễn!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#d1d5db',
             confirmButtonText: 'Xóa ngay',
             cancelButtonText: 'Hủy'
         }).then((result) => {
-            if (result.isConfirmed) window.location.href = url;
+            if (result.isConfirmed) {
+                document.getElementById('formMultiDelete').submit();
+            }
         })
+    }
+
+    function confirmDelete(e, url) {
+        e.preventDefault();
+        Swal.fire({
+            title: 'Xóa Acc này?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#ef4444',
+            confirmButtonText: 'Xóa'
+        }).then((res) => {
+            if (res.isConfirmed) window.location.href = url;
+        });
     }
     </script>
 </body>
