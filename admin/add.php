@@ -1,5 +1,5 @@
 <?php
-// admin/add.php - UPDATE V6: CUSTOM TOGGLE + FIX ALIGNMENT
+// admin/add.php - V7: COLLAPSIBLE UI
 require_once 'auth.php';
 require_once '../includes/config.php';
 ?>
@@ -16,7 +16,7 @@ require_once '../includes/config.php';
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
-    <!-- Cache Busting (Thêm random để ép tải CSS mới) -->
+    <!-- Cache Busting -->
     <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() . rand(10, 99) ?>">
     <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() . rand(10, 99) ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -77,7 +77,15 @@ require_once '../includes/config.php';
                                 <i class="ph-bold ph-image"></i> Chọn từ Thư viện
                             </button>
                         </div>
+
+                        <!-- [UPDATE] Lưới ảnh + Nút Thu gọn -->
                         <div id="imageGrid" class="sortable-grid"></div>
+
+                        <button type="button" id="toggleGridBtn" class="btn-toggle-view d-none" onclick="toggleGrid()">
+                            <i class="ph-bold ph-caret-down"></i> <span id="toggleText">Xem thêm ảnh</span>
+                        </button>
+                        <!-- End Update -->
+
                     </div>
                 </div>
 
@@ -94,7 +102,7 @@ require_once '../includes/config.php';
                         <label class="form-label mb-3 fw-bold text-uppercase text-secondary"
                             style="font-size: 12px;">Tùy chọn bán hàng</label>
 
-                        <!-- Switch Bán (DÙNG CUSTOM TOGGLE - KHÔNG DÙNG BOOTSTRAP) -->
+                        <!-- Switch Bán -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning">
@@ -122,7 +130,7 @@ require_once '../includes/config.php';
                             </div>
                         </div>
 
-                        <!-- Switch Thuê (DÙNG CUSTOM TOGGLE) -->
+                        <!-- Switch Thuê -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info">
@@ -212,7 +220,9 @@ require_once '../includes/config.php';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/admin-add.js?v=<?= time() . rand(10, 99) ?>"></script>
+
+    <!-- [UPDATE] Thêm timestamp để xóa cache JS -->
+    <script src="assets/js/admin-add.js?v=<?= time() . rand(100, 999) ?>"></script>
 </body>
 
 </html>

@@ -1,4 +1,4 @@
-/* admin/assets/css/admin.css - UPDATE V9: FLAT & MINIMAL */
+/* admin/assets/css/admin.css - V13: FINAL FIX UI (PADDING HACK) */
 
 /* 1. TABLE & LIST */
 .card-table { background: #ffffff; border-radius: 16px; overflow: hidden; border: 1px solid #e5e7eb; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05); }
@@ -6,48 +6,18 @@
 .table thead th { background: #f9fafb; color: #6b7280; font-weight: 700; font-size: 12px; text-transform: uppercase; padding: 18px 24px; border-bottom: 1px solid #e5e7eb; white-space: nowrap; }
 .table td { padding: 16px 24px; vertical-align: middle; border-bottom: 1px solid #f3f4f6; color: #111827; font-weight: 500; }
 .table tr:hover td { background-color: #fcfcfc; }
-.thumb-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb; } /* Thu nhỏ ảnh tí cho gọn */
+.thumb-img { width: 50px; height: 50px; border-radius: 8px; object-fit: cover; border: 1px solid #e5e7eb; }
 
-/* 2. BADGES (LABEL PHẲNG - BÉ LẠI) */
-.badge-soft { 
-    padding: 4px 8px; /* Padding nhỏ lại */
-    border-radius: 4px; /* Bo góc vuông hơn xíu cho hiện đại */
-    font-size: 10px; /* Font bé lại */
-    font-weight: 700; 
-    text-transform: uppercase;
-    color: #fff;
-    display: inline-flex; align-items: center; justify-content: center;
-    letter-spacing: 0.3px;
-    border: none;
-    line-height: 1;
-}
-
-/* Label BÁN: Cam Phẳng (Flat Orange) */
-.badge-sell {
-    background-color: #f59e0b; 
-}
-
-/* Label THUÊ: Xanh Phẳng (Flat Blue) */
-.badge-rent {
-    background-color: #3b82f6; 
-}
-
-/* Label Trạng thái */
+/* 2. BADGES */
+.badge-soft { padding: 4px 8px; border-radius: 4px; font-size: 10px; font-weight: 700; text-transform: uppercase; color: #fff; display: inline-flex; align-items: center; justify-content: center; letter-spacing: 0.3px; border: none; line-height: 1; }
+.badge-sell { background-color: #f59e0b; }
+.badge-rent { background-color: #3b82f6; }
 .badge-status-active { background-color: #10b981; color: #fff; }
 .badge-status-sold { background-color: #ef4444; color: #fff; }
 
-/* 3. PRICE DISPLAY (GIÁ TIỀN ĐỎ - GỌN HƠN) */
-.price-display-sell {
-    font-size: 14px; /* Vừa phải */
-    font-weight: 700;
-    color: #dc2626; /* Đỏ */
-    margin-bottom: 2px;
-}
-.price-display-rent {
-    font-size: 13px;
-    font-weight: 600;
-    color: #0284c7; /* Xanh biển */
-}
+/* 3. PRICE DISPLAY */
+.price-display-sell { font-size: 14px; font-weight: 700; color: #dc2626; margin-bottom: 2px; }
+.price-display-rent { font-size: 13px; font-weight: 600; color: #0284c7; }
 
 /* 4. BUTTONS & ACTIONS */
 .btn-action { width: 32px; height: 32px; border-radius: 8px; display: inline-flex; align-items: center; justify-content: center; transition: all 0.2s; background: #fff; border: 1px solid #e5e7eb; color: #6b7280; text-decoration: none; font-size: 14px; }
@@ -62,47 +32,104 @@
 .price-input-lg { font-size: 20px !important; font-weight: 800 !important; color: #059669 !important; padding-left: 15px !important; }
 .label-highlight { color: #b91c1c; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; display: block; }
 
-/* CHECKBOX */
+/* CHECKBOX & SWITCH */
 .form-check-input { width: 1.5em; height: 1.5em; margin-top: 0.2em; border: 2px solid #9ca3af; cursor: pointer; background-color: #fff; }
 .form-check-input:checked { background-color: #f59e0b; border-color: #f59e0b; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20'%3e%3cpath fill='none' stroke='%23fff' stroke-linecap='round' stroke-linejoin='round' stroke-width='3' d='M6 10l3 3l6-6'/%3e%3c/svg%3e"); }
 
-/* CUSTOM TOGGLE SWITCH */
-.custom-toggle {
-    appearance: none; -webkit-appearance: none;
-    width: 60px; height: 32px;
-    background: #d1d5db; border-radius: 50px;
-    position: relative; cursor: pointer; outline: none; border: none; margin: 0; padding: 0;
-    transition: background-color 0.3s;
-    display: inline-block; vertical-align: middle; flex-shrink: 0;
-}
-.custom-toggle::after {
-    content: ''; position: absolute; top: 3px; left: 3px;
-    width: 26px; height: 26px;
-    background: #fff; border-radius: 50%;
-    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
+.custom-toggle { appearance: none; -webkit-appearance: none; width: 60px; height: 32px; background: #d1d5db; border-radius: 50px; position: relative; cursor: pointer; outline: none; border: none; margin: 0; padding: 0; transition: background-color 0.3s; display: inline-block; vertical-align: middle; flex-shrink: 0; }
+.custom-toggle::after { content: ''; position: absolute; top: 3px; left: 3px; width: 26px; height: 26px; background: #fff; border-radius: 50%; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
 .custom-toggle:checked { background: #10b981; }
 .custom-toggle:checked::after { transform: translateX(28px); }
+.mode-switch-group { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; width: 100%; transition: 0.2s; }
 
-.mode-switch-group {
-    background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;
-    padding: 20px; margin-bottom: 15px;
-    display: flex; align-items: center; justify-content: space-between;
-    width: 100%; transition: 0.2s;
-}
-.mode-switch-group:hover { border-color: #d1d5db; background: #fcfcfc; }
-
-/* 6. GRID & IMAGES */
+/* 6. GRID & IMAGES (FIX CỨNG) */
 .image-uploader-area { border: 2px dashed #d1d5db; border-radius: 16px; padding: 30px; text-align: center; background: #f9fafb; cursor: pointer; transition: 0.2s; }
 .image-uploader-area:hover { border-color: #f59e0b; background: #fffbeb; }
-.sortable-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
-.sortable-item { aspect-ratio: 1/1; border-radius: 12px; overflow: hidden; position: relative; cursor: grab; border: 1px solid #e5e7eb; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-.sortable-item img { width: 100%; height: 100%; object-fit: cover; pointer-events: none; }
-.sortable-item:first-child { border: 3px solid #f59e0b; }
-.sortable-item:first-child::before { content: '★ ẢNH BÌA'; position: absolute; bottom: 0; left: 0; right: 0; background: #f59e0b; color: #fff; font-size: 10px; font-weight: 800; text-align: center; padding: 4px 0; z-index: 2; }
-.btn-remove-img { position: absolute; top: 4px; right: 4px; width: 24px; height: 24px; background: rgba(255, 255, 255, 0.9); color: #ef4444; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; z-index: 5; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
 
+/* GRID CONTAINER */
+.sortable-grid { 
+    display: grid !important; 
+    grid-template-columns: repeat(4, 1fr) !important; /* Bắt buộc 4 cột */
+    gap: 10px !important; 
+    margin-top: 20px;
+    width: 100%;
+    
+    /* Logic Thu Gọn An Toàn */
+    /* Chiều cao = (Chiều rộng màn hình - padding) / 4 */
+    max-height: calc(25vw + 10px); 
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    padding-bottom: 2px;
+}
+
+/* Khi mở rộng */
+.sortable-grid.expanded {
+    max-height: 5000px !important; /* Số cực lớn để hiện hết */
+    overflow: visible;
+}
+
+/* Responsive cho Desktop */
+@media (min-width: 768px) {
+    .sortable-grid {
+        max-height: 150px; /* Cố định chiều cao 1 hàng trên PC */
+    }
+}
+
+/* NÚT BẤM */
+.btn-toggle-view {
+    display: block; width: 100%; margin-top: 10px; background: #f3f4f6;
+    border: none; color: #6b7280; font-size: 13px; font-weight: 700;
+    padding: 10px; border-radius: 8px; cursor: pointer; transition: 0.2s; text-align: center;
+}
+.btn-toggle-view:hover { background: #e5e7eb; color: #111827; }
+.btn-toggle-view.d-none { display: none; }
+
+/* ITEM ẢNH (DÙNG PADDING HACK ĐỂ LUÔN VUÔNG) */
+.sortable-item { 
+    position: relative; 
+    width: 100%;
+    height: 0;             /* Chiều cao 0 */
+    padding-bottom: 100%;  /* Chiều cao = 100% Chiều rộng -> Luôn vuông */
+    
+    border-radius: 12px; 
+    overflow: hidden; 
+    cursor: grab; 
+    border: 1px solid #e5e7eb; 
+    background: #fff; 
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05); 
+}
+
+/* ẢNH BÊN TRONG (Absolute theo cha) */
+.sortable-item img { 
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%; height: 100%; 
+    object-fit: cover; 
+    pointer-events: none; 
+}
+
+/* VIỀN ẢNH BÌA */
+.sortable-item:first-child { border: 3px solid #f59e0b; }
+.sortable-item:first-child::before { 
+    content: '★ ẢNH BÌA'; position: absolute; bottom: 0; left: 0; right: 0; 
+    background: #f59e0b; color: #fff; font-size: 9px; font-weight: 800; 
+    text-align: center; padding: 3px 0; z-index: 2; 
+}
+
+/* NÚT XÓA (X) */
+.btn-remove-img { 
+    position: absolute; top: 4px; right: 4px; 
+    width: 22px; height: 22px; 
+    background: rgba(255, 255, 255, 0.95); 
+    color: #ef4444; border-radius: 50%; 
+    display: flex; align-items: center; justify-content: center; 
+    cursor: pointer; z-index: 5; 
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2); 
+    font-size: 14px;
+}
+.btn-remove-img:hover { background: #ef4444; color: #fff; }
+
+/* 7. NFT LIBRARY (GIỮ NGUYÊN) */
 .nft-grid-8 { display: grid; grid-template-columns: repeat(8, 1fr); gap: 10px; padding-bottom: 20px; }
 .nft-grid-5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; padding-bottom: 20px; min-height: 200px; }
 @media (max-width: 1400px) { .nft-grid-8 { grid-template-columns: repeat(6, 1fr); } }
@@ -112,9 +139,10 @@
 .nft-card { position: relative; aspect-ratio: 1/1; background: #fff; border-radius: 8px; overflow: hidden; cursor: pointer; border: 1px solid #d1d5db; transition: all 0.2s; }
 .nft-card img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .nft-card:hover { border-color: #9ca3af; }
-.nft-card.selected, .nft-card.active { border: 2px solid #f59e0b; }
-.nft-check-icon { position: absolute; top: 5px; right: 5px; width: 20px; height: 20px; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; opacity: 0; transform: scale(0); transition: all 0.2s; z-index: 10; }
-.nft-card.selected .nft-check-icon, .nft-card.active .nft-check-icon { opacity: 1; transform: scale(1); }
+.nft-card.active { border: 2px solid #f59e0b; }
+
+.nft-order-badge { position: absolute; top: 5px; right: 5px; width: 24px; height: 24px; background: #f59e0b; color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 800; box-shadow: 0 2px 5px rgba(0,0,0,0.2); opacity: 0; transform: scale(0); transition: all 0.2s; z-index: 10; }
+.nft-card.active .nft-order-badge { opacity: 1; transform: scale(1); }
 
 .floating-toolbar { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%) translateY(150%); background: #111827; color: #fff; padding: 12px 24px; border-radius: 50px; display: flex; align-items: center; gap: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); z-index: 1000; transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
 .floating-toolbar.active { transform: translateX(-50%) translateY(0); }

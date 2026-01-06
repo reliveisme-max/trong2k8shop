@@ -1,5 +1,5 @@
 <?php
-// admin/edit.php - UPDATE V6: CUSTOM TOGGLE + FIX ALIGNMENT
+// admin/edit.php - V7: COLLAPSIBLE UI
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -99,7 +99,15 @@ if (!is_array($gallery)) $gallery = [];
                                 <i class="ph-bold ph-image"></i> Chọn từ Thư viện
                             </button>
                         </div>
+
+                        <!-- [UPDATE] Lưới ảnh + Nút Thu gọn -->
                         <div id="imageGrid" class="sortable-grid"></div>
+
+                        <button type="button" id="toggleGridBtn" class="btn-toggle-view d-none" onclick="toggleGrid()">
+                            <i class="ph-bold ph-caret-down"></i> <span id="toggleText">Xem thêm ảnh</span>
+                        </button>
+                        <!-- End Update -->
+
                     </div>
                 </div>
 
@@ -246,16 +254,24 @@ if (!is_array($gallery)) $gallery = [];
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/admin-add.js?v=<?= time() . rand(10, 99) ?>"></script>
+
+    <!-- [UPDATE] TimeStamp -->
+    <script src="assets/js/admin-add.js?v=<?= time() . rand(100, 999) ?>"></script>
 
     <!-- JS Load ảnh cũ -->
     <script>
     document.addEventListener('DOMContentLoaded', function() {
         const existingImages = <?= json_encode($gallery) ?>;
+        // Load từng ảnh cũ vào lưới
         existingImages.forEach(filename => {
             const uid = 'old_' + Math.random().toString(36).substr(2, 9);
+            // Ảnh cũ từ server thì không dùng Blob được (phải dùng link thật)
+            // Nhưng không sao, ảnh từ server load nhanh hơn upload base64
             addToGrid(uid, `../uploads/${filename}`, 'lib', filename);
         });
+
+        // Sau khi load xong thì check để hiện nút Xem thêm
+        setTimeout(checkGridHeight, 500);
     });
     </script>
 </body>
