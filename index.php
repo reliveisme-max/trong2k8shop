@@ -201,7 +201,8 @@ function createPageLink($page)
     <footer>
         <div class="container">
             <p class="mb-1 text-uppercase">&copy; 2024 TRỌNG 2K8 SHOP - UY TÍN TẠO NIỀM TIN</p>
-            <p class="mb-0">Hỗ trợ Zalo: <span class="fw-bold" style="color: var(--text-main);">0984.074.897</span></p>
+            <p class="mb-0">Hỗ trợ Zalo: <span class="fw-bold" style="color: var(--text-main);">0984.074.897fấ</span>
+            </p>
         </div>
     </footer>
 
