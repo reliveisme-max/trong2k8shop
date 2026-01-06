@@ -1,0 +1,40 @@
+# 1. Chặn liệt kê danh sách file (Bảo mật)
+<<<<<<< HEAD
+Options -Indexes
+
+# 2. Bật tính năng viết lại URL
+=======
+
+Options -Indexes
+
+# 2. Bật tính năng viết lại URL (Chuẩn bị cho SEO sau này)
+
+>>>>>>> 9668e7a468d0ff305d623c073d1128a5b338fd9a
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+</IfModule>
+
+# 3. Chặn truy cập trực tiếp vào file config.php
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9668e7a468d0ff305d623c073d1128a5b338fd9a
+<Files "config.php">
+Order Allow,Deny
+Deny from all
+</Files>
+
+<<<<<<< HEAD
+# 4. Chặn truy cập vào các file rác
+<FilesMatch "\.(log|sql)$">
+Order Allow,Deny
+Deny from all
+</FilesMatch>
+=======
+# 4. Chặn truy cập vào các file .log, .sql nếu bạn lỡ quên xóa
+
+<FilesMatch "\.(log|sql)$">
+Order Allow,Deny
+Deny from all
+</FilesMatch>
+>>>>>>> 9668e7a468d0ff305d623c073d1128a5b338fd9a

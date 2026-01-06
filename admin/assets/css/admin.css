@@ -1,0 +1,423 @@
+/* admin/assets/css/admin.css - FINAL VERSION (LIGHT MODE + STATUS SWITCH) */
+
+/* =========================================
+   1. FORM ELEMENTS (Light Theme)
+   ========================================= */
+.form-card {
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 16px; padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.form-label {
+    font-size: 13px; font-weight: 700; 
+    color: #374151;
+    text-transform: uppercase; 
+    letter-spacing: 0.5px;
+    margin-bottom: 8px; display: block;
+}
+
+.custom-input, .form-select, .input-group-text {
+    background-color: #ffffff !important;
+    border: 1px solid #d1d5db !important;
+    color: #111827 !important;
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 14px; font-weight: 500;
+    transition: all 0.2s;
+}
+
+.custom-input:focus, .form-select:focus {
+    border-color: #f59e0b !important;
+    box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.1) !important;
+    outline: none;
+}
+
+.custom-addon {
+    background-color: #f3f4f6 !important;
+    border-right: none !important;
+    color: #6b7280 !important;
+}
+
+.price-input-lg {
+    font-size: 24px !important; 
+    font-weight: 800 !important;
+    padding: 15px 20px !important;
+    color: #10b981 !important;
+}
+
+/* =========================================
+   2. RADIO CARDS (LOẠI ACC)
+   ========================================= */
+.radio-group { display: flex; gap: 12px; }
+.btn-check { position: absolute; clip: rect(0,0,0,0); pointer-events: none; }
+
+.radio-label {
+    flex: 1; cursor: pointer;
+    background: #ffffff;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 15px;
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    transition: all 0.2s; position: relative; overflow: hidden;
+}
+
+.radio-label i { font-size: 24px; color: #9ca3af; transition: 0.2s; }
+.radio-label span { font-weight: 700; font-size: 14px; color: #6b7280; }
+
+.btn-check:checked + .radio-label {
+    background: #fff7ed;
+    border-color: #f59e0b;
+}
+.btn-check:checked + .radio-label i,
+.btn-check:checked + .radio-label span { color: #f59e0b; }
+
+.btn-check:checked + .radio-label::after {
+    content: '\2713';
+    position: absolute; top: 0; right: 0;
+    background: #f59e0b; color: #fff;
+    font-size: 12px; font-weight: bold;
+    padding: 2px 8px; border-bottom-left-radius: 10px;
+}
+
+/* =========================================
+   3. UPLOAD AREA
+   ========================================= */
+.upload-box {
+    background: #f9fafb;
+    border: 2px dashed #d1d5db;
+    border-radius: 12px; 
+    height: 200px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    cursor: pointer; transition: 0.2s;
+    position: relative; 
+    overflow: hidden;
+}
+.upload-box:hover { border-color: #f59e0b; background: #fffbeb; }
+
+.upload-icon {
+    width: 48px; height: 48px; background: #e5e7eb;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 24px; color: #6b7280; margin-bottom: 10px;
+}
+
+#preview-thumb { width: 100%; height: 100%; position: absolute; top: 0; left: 0; }
+#preview-thumb .preview-item { width: 100%; height: 100%; position: relative; border: none; border-radius: 0; }
+#preview-thumb .preview-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+.preview-grid { 
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); 
+    gap: 10px; margin-top: 15px; 
+}
+.preview-grid .preview-item {
+    aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; position: relative;
+    border: 1px solid #e5e7eb;
+}
+.preview-grid .preview-item img { width: 100%; height: 100%; object-fit: cover; }
+
+.btn-remove-img {
+    position: absolute; top: 4px; right: 4px; width: 22px; height: 22px;
+    background: rgba(239, 68, 68, 0.9); color: #fff; border-radius: 50%;
+    border: none; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; cursor: pointer; z-index: 10;
+}
+.btn-remove-img:hover { background: #ef4444; transform: scale(1.1); }
+
+/* =========================================
+   4. TOGGLE SWITCH (CŨ - ĐỂ LẠI NẾU CẦN)
+   ========================================= */
+.toggle-wrapper {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #f9fafb; border: 1px solid #e5e7eb;
+    padding: 12px 16px; border-radius: 12px;
+}
+.toggle-title { font-weight: 600; color: #111827; }
+
+/* =========================================
+   5. MOBILE ASSET LIST & CHIPS
+   ========================================= */
+.mobile-list-view { display: none; }
+.filter-chips { display: none; }
+
+@media (max-width: 991px) {
+    .desktop-table { display: none; }
+    
+    .filter-chips {
+        display: flex; gap: 8px; overflow-x: auto;
+        padding-bottom: 10px; margin-bottom: 5px;
+    }
+    .filter-chips::-webkit-scrollbar { display: none; }
+    
+    .chip {
+        white-space: nowrap; padding: 6px 14px;
+        background: #ffffff; border: 1px solid #e5e7eb;
+        border-radius: 20px; color: #6b7280;
+        font-size: 13px; font-weight: 600; text-decoration: none;
+    }
+    .chip.active { background: #f59e0b; color: #fff; border-color: #f59e0b; }
+    
+    .mobile-list-view { display: flex; flex-direction: column; gap: 10px; }
+    
+    .asset-card {
+        background: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px; padding: 12px;
+        display: flex; align-items: center; gap: 12px;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    }
+    .asset-thumb {
+        width: 56px; height: 56px; border-radius: 10px;
+        object-fit: cover; flex-shrink: 0; border: 1px solid #e5e7eb;
+    }
+    .asset-info { flex: 1; min-width: 0; }
+    .asset-id {
+        font-size: 10px; font-weight: 800; 
+        color: #f59e0b; background: #fff7ed;
+        padding: 2px 6px; border-radius: 4px; display: inline-block;
+        margin-bottom: 2px;
+    }
+    .asset-title {
+        color: #111827; font-weight: 700; font-size: 14px;
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .asset-price { color: #10b981; font-weight: 800; font-size: 15px; }
+    .btn-more { color: #9ca3af; background: transparent; border: none; font-size: 18px; }
+    .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .status-dot.active { background: #10b981; }
+    .status-dot.sold { background: #ef4444; }
+}
+
+/* =========================================
+   6. PAGINATION
+   ========================================= */
+.pagination .page-link {
+    background: #ffffff; border: 1px solid #e5e7eb;
+    color: #6b7280; margin: 0 3px; border-radius: 8px;
+    min-width: 36px; text-align: center; font-weight: 600;
+}
+.pagination .page-link:hover { background: #f9fafb; color: #f59e0b; border-color: #f59e0b; }
+.pagination .page-item.active .page-link {
+    background: #f59e0b; border-color: #f59e0b; color: #fff;
+}
+.pagination .page-item.disabled .page-link { opacity: 0.6; background: #f3f4f6; }
+
+/* =========================================
+   7. LIBRARY MODAL GRID
+   ========================================= */
+.lib-grid {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 12px;
+}
+.lib-item {
+    position: relative; aspect-ratio: 1/1; border-radius: 8px;
+    overflow: hidden; cursor: pointer; border: 2px solid transparent; background-color: #f3f4f6;
+}
+.lib-item img {
+    width: 100%; height: 100%; object-fit: cover;
+    transition: transform 0.2s; display: block;
+}
+.lib-item:hover { border-color: #d1d5db; }
+.lib-item:hover img { transform: scale(1.05); }
+.lib-item.selected { border-color: #f59e0b; }
+.lib-item.selected::after {
+    content: '✔'; position: absolute; top: 0; right: 0;
+    background: #f59e0b; color: white; font-size: 10px; font-weight: bold;
+    padding: 2px 6px; border-bottom-left-radius: 6px;
+}
+
+/* =========================================
+   8. BUTTON SUBMIT
+   ========================================= */
+.btn-submit {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+    color: #fff; border: none;
+    padding: 12px 40px; border-radius: 10px;
+    font-weight: 700; text-transform: uppercase;
+    box-shadow: 0 4px 6px rgba(245, 158, 11, 0.2);
+    transition: 0.3s;
+}
+.btn-submit:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(245, 158, 11, 0.3); }
+
+/* =========================================
+   9. FIX IOS ZOOM
+   ========================================= */
+@media screen and (max-width: 768px) {
+    .custom-input, .form-select, .input-group-text, .price-input-lg, input, textarea, select {
+        font-size: 16px !important; 
+    }
+}
+
+/* =========================================
+   10. CUSTOM STATUS SWITCH (ĐANG BÁN / ĐÃ BÁN) - MỚI
+   ========================================= */
+.switch-status {
+    position: relative;
+    display: inline-block;
+    width: 130px; /* Rộng để chứa chữ */
+    height: 38px;
+}
+
+.switch-status input { opacity: 0; width: 0; height: 0; }
+
+.slider-status {
+    position: absolute; cursor: pointer;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #ef4444; /* Mặc định đỏ (Đã bán) */
+    transition: .4s;
+    border-radius: 38px;
+    box-shadow: inset 0 2px 5px rgba(0,0,0,0.1);
+}
+
+.slider-status:before {
+    position: absolute; content: "";
+    height: 30px; width: 30px;
+    left: 4px; bottom: 4px;
+    background-color: white;
+    transition: .4s; border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    z-index: 2;
+}
+
+/* Chữ ĐÃ BÁN (khi tắt) */
+.slider-status:after {
+    content: "ĐÃ BÁN";
+    color: white;
+    font-size: 12px; font-weight: 800;
+    position: absolute;
+    right: 15px; top: 50%;
+    transform: translateY(-50%);
+    text-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+/* KHI BẬT (CHECKED - ĐANG BÁN) */
+.switch-status input:checked + .slider-status {
+    background-color: #10b981; /* Xanh lá */
+}
+
+.switch-status input:checked + .slider-status:before {
+    transform: translateX(92px);
+}
+
+.switch-status input:checked + .slider-status:after {
+    content: "ĐANG BÁN";
+    left: 15px; right: auto;
+}
+/* =========================================
+   11. NFT LIBRARY STYLE (THƯ VIỆN ẢNH MỚI)
+   ========================================= */
+
+/* Lưới ảnh (Grid) */
+.nft-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); /* Ô to hơn */
+    gap: 15px;
+    padding-bottom: 80px; /* Chừa chỗ cho thanh nổi */
+}
+
+/* Thẻ Card chứa ảnh */
+.nft-card {
+    position: relative;
+    aspect-ratio: 1/1; /* Vuông vức */
+    background: #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nft-card img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+    display: block;
+}
+
+/* Input checkbox ẩn đi */
+.nft-card input[type="checkbox"] {
+    position: absolute; opacity: 0; width: 0; height: 0;
+}
+
+/* Hiệu ứng Hover */
+.nft-card:hover {
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    transform: translateY(-3px);
+}
+.nft-card:hover img {
+    transform: scale(1.05);
+}
+
+/* --- TRẠNG THÁI ĐƯỢC CHỌN (CHECKED) --- */
+.nft-card:has(input:checked) {
+    border-color: #f59e0b; /* Viền Cam */
+    background-color: #fff7ed;
+    transform: scale(0.95); /* Thu nhỏ nhẹ tạo cảm giác bấm */
+    box-shadow: none;
+}
+
+/* Dấu tích V xịn xò */
+.nft-check-icon {
+    position: absolute; top: 8px; right: 8px;
+    width: 24px; height: 24px;
+    background: #f59e0b; color: white;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+    opacity: 0; transform: scale(0);
+    transition: all 0.2s;
+    z-index: 10;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+}
+
+.nft-card input:checked ~ .nft-check-icon {
+    opacity: 1; transform: scale(1);
+}
+
+/* --- THANH CÔNG CỤ NỔI (FLOATING TOOLBAR) --- */
+.floating-toolbar {
+    position: fixed;
+    bottom: 30px; left: 50%;
+    transform: translateX(-50%) translateY(150%); /* Mặc định ẩn xuống dưới */
+    background: #111827; /* Màu đen sang trọng */
+    color: #fff;
+    padding: 12px 24px;
+    border-radius: 50px;
+    display: flex; align-items: center; gap: 20px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+    z-index: 1000;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.floating-toolbar.active {
+    transform: translateX(-50%) translateY(0); /* Trồi lên */
+}
+
+.floating-count {
+    font-weight: 700; font-size: 14px;
+    padding-right: 20px;
+    border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.floating-btn-delete {
+    background: #ef4444; color: white;
+    border: none; padding: 8px 20px;
+    border-radius: 20px; font-weight: 700; font-size: 13px;
+    cursor: pointer; transition: 0.2s;
+    display: flex; align-items: center; gap: 6px;
+}
+.floating-btn-delete:hover { background: #dc2626; transform: scale(1.05); }
+
+.floating-btn-close {
+    background: transparent; border: none; color: #9ca3af;
+    font-size: 20px; cursor: pointer;
+}
+.floating-btn-close:hover { color: #fff; }
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .nft-grid { grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .floating-toolbar { width: 90%; justify-content: space-between; bottom: 80px; } /* Tránh menu đáy */
+}
