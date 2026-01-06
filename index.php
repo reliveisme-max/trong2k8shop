@@ -1,17 +1,16 @@
 <?php
-// index.php - FINAL PINK V2: FIX LAYOUT MOBILE + REMOVE TRUST BOX
+// index.php - V3: HIỂN THỊ ĐÚNG GIÁ BÁN / GIÁ THUÊ
 require_once 'includes/config.php';
 require_once 'includes/functions.php';
 
-// 1. CHẾ ĐỘ XEM
+// 1. CHẾ ĐỘ XEM (Mặc định là shop)
 $viewMode = isset($_GET['view']) && $_GET['view'] == 'rent' ? 'rent' : 'shop';
-$typeFilter = ($viewMode == 'rent') ? 1 : 0;
 
-// 2. THAM SỐ LỌC
+// 2. LẤY DỮ LIỆU (Hàm này đã được sửa ở functions.php)
+// Truyền viewMode vào để nó tự lọc theo price hoặc price_rent
 $filterParams = $_GET;
-$filterParams['type'] = $typeFilter;
+$filterParams['view'] = $viewMode;
 
-// 3. LẤY DỮ LIỆU
 $result = getFilteredProducts($conn, $filterParams, 12);
 $products = $result['data'];
 $pageTitle = $result['title'];
@@ -62,7 +61,7 @@ function createPageLink($page)
 
     <div class="container py-5">
 
-        <!-- ZALO BANNER (Đã xóa Trust Dashboard 3 ô, chỉ giữ lại banner liên hệ) -->
+        <!-- BANNER LIÊN HỆ -->
         <a href="https://zalo.me/0984074897" target="_blank" class="text-decoration-none">
             <div class="contact-banner mb-5">
                 <h3><i class="ph-fill ph-chat-circle-dots"></i> Hỗ trợ giao dịch 24/7 qua Zalo: 0984.074.897</h3>
@@ -119,8 +118,6 @@ function createPageLink($page)
                 20m</a>
             <a href="?min=20000000&max=40000000" class="filter-pill <?= checkActive(20000000, 40000000) ?>">20m -
                 40m</a>
-            <a href="?min=40000000&max=60000000" class="filter-pill <?= checkActive(40000000, 60000000) ?>">40m -
-                60m</a>
             <a href="?min=60000000" class="filter-pill <?= checkActive(60000000, null) ?>">Trên 60m</a>
             <?php endif; ?>
         </div>
@@ -128,11 +125,23 @@ function createPageLink($page)
         <!-- PRODUCT LIST -->
         <div class="row g-4">
             <?php foreach ($products as $p): ?>
+            <?php
+                // XÁC ĐỊNH GIÁ HIỂN THỊ
+                // Nếu đang xem tab Rent -> Lấy giá thuê
+                // Nếu đang xem tab Shop -> Lấy giá bán
+                $displayPrice = ($viewMode == 'rent') ? $p['price_rent'] : $p['price'];
+
+                // Xác định nhãn đơn vị (chỉ cho thuê)
+                $unitLabel = '';
+                if ($viewMode == 'rent') {
+                    $unitLabel = ($p['unit'] == 2) ? '/ ngày' : '/ giờ';
+                }
+                ?>
             <div class="col-12 col-md-6 col-lg-3">
                 <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none d-block h-100">
                     <div class="product-card">
                         <div class="product-thumb-box">
-                            <?php if ($p['type'] == 1): ?>
+                            <?php if ($viewMode == 'rent'): ?>
                             <span class="badge bg-danger bg-opacity-75 position-absolute top-0 end-0 m-2 fw-bold"
                                 style="z-index: 2">THUÊ</span>
                             <?php endif; ?>
@@ -150,11 +159,9 @@ function createPageLink($page)
                             <div class="product-meta">
                                 <div class="price-tag">
                                     <span class="text-secondary fw-normal" style="font-size: 14px;">Giá: </span>
-                                    <?= formatPrice($p['price']) ?>
-                                    <?php if ($p['type'] == 1): ?>
+                                    <?= formatPrice($displayPrice) ?>
                                     <small class="fw-normal"
-                                        style="font-size: 12px; color: var(--text-sub);"><?= ($p['unit'] == 2) ? '/ ngày' : '/ giờ' ?></small>
-                                    <?php endif; ?>
+                                        style="font-size: 12px; color: var(--text-sub);"><?= $unitLabel ?></small>
                                 </div>
                                 <div class="btn-detail">CHI TIẾT</div>
                             </div>
@@ -201,8 +208,7 @@ function createPageLink($page)
     <footer>
         <div class="container">
             <p class="mb-1 text-uppercase">&copy; 2024 TRỌNG 2K8 SHOP - UY TÍN TẠO NIỀM TIN</p>
-            <p class="mb-0">Hỗ trợ Zalo: <span class="fw-bold" style="color: var(--text-main);">0984.074.897fấ</span>
-            </p>
+            <p class="mb-0">Hỗ trợ Zalo: <span class="fw-bold" style="color: var(--text-main);">0984.074.897</span></p>
         </div>
     </footer>
 

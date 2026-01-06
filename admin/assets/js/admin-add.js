@@ -1,256 +1,234 @@
-// admin/assets/js/admin-add.js - FINAL VERSION (HỖ TRỢ EDIT MODE + NÚT XÓA)
+// admin/assets/js/admin-add.js - FINAL V2: LOGIC KÉO THẢ & TRỘN ẢNH
 
+let fileStore = {}; // Kho chứa file từ máy tính (key: uuid, value: File)
+let sortable; // Đối tượng SortableJS
 let currentPage = 1;
 let isLoading = false;
 let hasMore = true;
-let currentMode = ''; 
-let selectedFiles = []; 
-let modalEl;
-let scrollArea;
-let gridEl;
-let loadingEl;
-let endDataEl;
+let selectedLibFiles = []; // Mảng tạm chứa file chọn từ modal thư viện
 
-// QUẢN LÝ FILE UPLOAD & THƯ VIỆN
-// Dùng DataTransfer để can thiệp vào input file
-let dtThumb = new DataTransfer(); 
-let dtGallery = new DataTransfer(); 
-let libGalleryArr = []; // Mảng chứa tên file từ thư viện (bao gồm cả ảnh cũ)
+document.addEventListener('DOMContentLoaded', function () {
+    // 1. Khởi tạo Kéo thả
+    const grid = document.getElementById('imageGrid');
+    sortable = new Sortable(grid, {
+        animation: 150,
+        ghostClass: 'sortable-ghost',
+        onEnd: function () {
+            // Sau khi kéo thả xong thì làm gì? (Hiện tại chưa cần xử lý ngay)
+        }
+    });
 
-document.addEventListener('DOMContentLoaded', function() {
-    var modalElement = document.getElementById('libraryModal');
-    if (modalElement) {
-        modalEl = new bootstrap.Modal(modalElement);
-    }
-    scrollArea = document.getElementById('scrollArea');
-    gridEl = document.getElementById('libGrid');
-    loadingEl = document.getElementById('loadingIndicator');
-    endDataEl = document.getElementById('endOfData');
+    // 2. Lắng nghe sự kiện chọn file từ máy
+    const fileInput = document.getElementById('fileInput');
+    fileInput.addEventListener('change', function (e) {
+        handleLocalFiles(e.target.files);
+        // Reset input để chọn lại được file cũ nếu muốn
+        fileInput.value = '';
+    });
 
+    // 3. Khởi tạo trạng thái Switch (Bán/Thuê)
+    toggleSections();
+
+    // 4. Xử lý cuộn thư viện (Infinite Scroll)
+    const scrollArea = document.getElementById('scrollArea');
     if (scrollArea) {
         scrollArea.addEventListener('scroll', () => {
             if (scrollArea.scrollTop + scrollArea.clientHeight >= scrollArea.scrollHeight - 50) {
                 if (hasMore && !isLoading) {
                     currentPage++;
-                    fetchImages(currentPage);
+                    fetchLibImages(currentPage);
                 }
             }
         });
     }
 });
 
-// --- HÀM MỚI: KHỞI TẠO DỮ LIỆU KHI SỬA (EDIT MODE) ---
-// Hàm này được gọi từ file edit.php
-function initEditData(thumb, galleryJson) {
-    // 1. Xử lý Thumb cũ
-    if (thumb && thumb !== '') {
-        const thumbContainer = document.getElementById('preview-thumb');
-        thumbContainer.innerHTML = `
-            <div class="preview-item">
-                <img src="../uploads/${thumb}">
-                <button type="button" class="btn-remove-img" onclick="clearThumbLib()">&times;</button>
-            </div>`;
-        // Gán giá trị vào input hidden để nếu không sửa gì thì vẫn giữ nguyên
-        document.getElementById('inputSelectedThumb').value = thumb;
-    }
+// --- PHẦN 1: XỬ LÝ ẢNH (LOCAL & LIBRARY) ---
 
-    // 2. Xử lý Gallery cũ
-    if (galleryJson) {
-        try {
-            // galleryJson truyền vào là string, parse ra mảng
-            // Nếu galleryJson là object/array sẵn (do PHP json_encode) thì dùng luôn
-            const arr = (typeof galleryJson === 'string') ? JSON.parse(galleryJson) : galleryJson;
-            
-            if (Array.isArray(arr)) {
-                libGalleryArr = arr; // Gán ảnh cũ vào mảng quản lý
-                renderGallery();     // Vẽ ra màn hình (tự động có nút X)
-            }
-        } catch (e) {
-            console.error("Lỗi parse gallery:", e);
-        }
-    }
+// Tạo ID ngẫu nhiên cho mỗi ảnh
+function uuidv4() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+    });
 }
 
-// 1. API LẤY ẢNH TỪ SERVER
-async function fetchImages(page) {
-    if (isLoading || !hasMore) return;
+// Xử lý file từ máy tính upload lên
+function handleLocalFiles(files) {
+    Array.from(files).forEach(file => {
+        // Chỉ nhận ảnh
+        if (!file.type.startsWith('image/')) return;
+
+        const uid = uuidv4();
+        fileStore[uid] = file; // Lưu vào kho
+
+        // Tạo giao diện preview
+        const reader = new FileReader();
+        reader.onload = function (e) {
+            addToGrid(uid, e.target.result, 'local');
+        }
+        reader.readAsDataURL(file);
+    });
+}
+
+// Xử lý file chọn từ Thư viện
+function confirmLibrarySelection() {
+    selectedLibFiles.forEach(filename => {
+        const uid = uuidv4();
+        // Lưu filename vào dataset của div
+        addToGrid(uid, `../uploads/${filename}`, 'lib', filename);
+    });
+    
+    // Reset modal
+    selectedLibFiles = [];
+    document.querySelectorAll('.lib-item.selected').forEach(el => el.classList.remove('selected'));
+    
+    // Đóng modal
+    const modalEl = document.getElementById('libraryModal');
+    const modal = bootstrap.Modal.getInstance(modalEl);
+    modal.hide();
+}
+
+// Hàm chung: Vẽ ô ảnh vào lưới
+function addToGrid(uid, src, type, filename = '') {
+    const div = document.createElement('div');
+    div.className = 'sortable-item';
+    div.dataset.id = uid;   // ID để tìm lại file
+    div.dataset.type = type; // 'local' hoặc 'lib'
+    if (filename) div.dataset.filename = filename; // Nếu là lib thì lưu tên file
+
+    div.innerHTML = `
+        <img src="${src}">
+        <div class="btn-remove-img" onclick="removeImage(this, '${uid}')">
+            <i class="ph-bold ph-x"></i>
+        </div>
+    `;
+    document.getElementById('imageGrid').appendChild(div);
+}
+
+// Xóa ảnh khỏi lưới
+function removeImage(btn, uid) {
+    const item = btn.closest('.sortable-item');
+    item.remove();
+    // Nếu là file local thì xóa khỏi kho để giải phóng bộ nhớ (không bắt buộc nhưng tốt)
+    if (fileStore[uid]) delete fileStore[uid];
+}
+
+// --- PHẦN 2: LOGIC FORM & SUBMIT ---
+
+function toggleSections() {
+    const isSell = document.getElementById('switchSell').checked;
+    const isRent = document.getElementById('switchRent').checked;
+
+    const sellSec = document.getElementById('sellSection');
+    const rentSec = document.getElementById('rentSection');
+
+    sellSec.style.display = isSell ? 'block' : 'none';
+    rentSec.style.display = isRent ? 'block' : 'none';
+}
+
+function submitForm() {
+    const gridItems = document.querySelectorAll('.sortable-item');
+    if (gridItems.length === 0) {
+        Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 ảnh!', 'error');
+        return;
+    }
+
+    // Kiểm tra chọn loại acc
+    const isSell = document.getElementById('switchSell').checked;
+    const isRent = document.getElementById('switchRent').checked;
+    if (!isSell && !isRent) {
+        Swal.fire('Lỗi', 'Vui lòng chọn ít nhất 1 chế độ (Bán hoặc Thuê)!', 'error');
+        return;
+    }
+
+    // 1. TÁI CẤU TRÚC FILE INPUT (QUAN TRỌNG)
+    // Chúng ta cần sắp xếp lại fileStore theo đúng thứ tự trên giao diện
+    const dataTransfer = new DataTransfer();
+    const libImages = []; // Mảng chứa tên file thư viện
+    const orderMap = [];  // Mảng đánh dấu thứ tự: ['local', 'lib', 'local'...]
+
+    gridItems.forEach(item => {
+        const type = item.dataset.type;
+        const uid = item.dataset.id;
+
+        if (type === 'local') {
+            const file = fileStore[uid];
+            if (file) {
+                dataTransfer.items.add(file);
+                orderMap.push('local');
+            }
+        } else if (type === 'lib') {
+            libImages.push(item.dataset.filename);
+            orderMap.push('lib');
+        }
+    });
+
+    // Cập nhật input file thật
+    document.getElementById('fileInput').files = dataTransfer.files;
+    
+    // Cập nhật input hidden cho thư viện
+    document.getElementById('libraryInput').value = JSON.stringify(libImages);
+
+    // Tạo thêm input hidden để gửi Map thứ tự (giúp PHP biết đường mà lần)
+    // Ta sẽ tạo dynamic input vì form chưa có sẵn cái này
+    let mapInput = document.createElement('input');
+    mapInput.type = 'hidden';
+    mapInput.name = 'order_map';
+    mapInput.value = JSON.stringify(orderMap);
+    document.getElementById('addForm').appendChild(mapInput);
+
+    // Gửi form
+    document.getElementById('addForm').submit();
+}
+
+// --- PHẦN 3: THƯ VIỆN ẢNH (MODAL) ---
+
+function openLibrary() {
+    const grid = document.getElementById('libGrid');
+    if (grid.innerHTML.trim() === '') fetchLibImages(1);
+    
+    const modal = new bootstrap.Modal(document.getElementById('libraryModal'));
+    modal.show();
+}
+
+async function fetchLibImages(page) {
+    if (isLoading) return;
     isLoading = true;
-    if(loadingEl) loadingEl.style.display = 'block';
 
     try {
         const response = await fetch(`get_images.php?page=${page}`);
         const data = await response.json();
         if (data.status === 'success') {
             hasMore = data.has_more;
+            const grid = document.getElementById('libGrid');
+            
             data.data.forEach(filename => {
                 const div = document.createElement('div');
                 div.className = 'lib-item';
-                if(selectedFiles.includes(filename)) div.classList.add('selected');
                 div.innerHTML = `<img src="../uploads/${filename}" loading="lazy">`;
-                div.onclick = function() { toggleSelect(this, filename); };
-                gridEl.appendChild(div);
+                div.onclick = function() {
+                    this.classList.toggle('selected');
+                    if (this.classList.contains('selected')) {
+                        selectedLibFiles.push(filename);
+                    } else {
+                        selectedLibFiles = selectedLibFiles.filter(f => f !== filename);
+                    }
+                };
+                grid.appendChild(div);
             });
-            if (!hasMore && endDataEl) endDataEl.style.display = 'block';
         }
     } catch (error) {
-        console.error("Lỗi:", error);
+        console.error(error);
     } finally {
         isLoading = false;
-        if(loadingEl) loadingEl.style.display = 'none';
     }
 }
 
-// 2. MỞ MODAL THƯ VIỆN
-function openLibrary(mode) {
-    currentMode = mode;
-    if (gridEl && gridEl.innerHTML.trim() === '') fetchImages(1);
-    // Reset selection visual
-    document.querySelectorAll('.lib-item').forEach(e => e.classList.remove('selected'));
-    selectedFiles = [];
-    if(modalEl) modalEl.show();
-}
+// --- PHẦN 4: TIỆN ÍCH KHÁC ---
 
-// 3. CHỌN ẢNH (CLICK VÀO ẢNH)
-function toggleSelect(el, filename) {
-    if (currentMode === 'thumb') {
-        document.querySelectorAll('.lib-item').forEach(e => e.classList.remove('selected'));
-        el.classList.add('selected');
-        selectedFiles = [filename];
-    } else {
-        if (el.classList.contains('selected')) {
-            el.classList.remove('selected');
-            selectedFiles = selectedFiles.filter(f => f !== filename);
-        } else {
-            el.classList.add('selected');
-            selectedFiles.push(filename);
-        }
-    }
-}
-
-// 4. XÁC NHẬN CHỌN TỪ THƯ VIỆN
-function confirmSelection() {
-    if (selectedFiles.length === 0) {
-        modalEl.hide(); return;
-    }
-
-    if (currentMode === 'thumb') {
-        const file = selectedFiles[0];
-        document.getElementById('preview-thumb').innerHTML = `
-            <div class="preview-item">
-                <img src="../uploads/${file}">
-                <button type="button" class="btn-remove-img" onclick="clearThumbLib()">&times;</button>
-            </div>`;
-        document.getElementById('inputSelectedThumb').value = file;
-        document.getElementById('thumbInput').value = ''; // Clear file input
-    } else {
-        // Cộng dồn vào mảng thư viện hiện tại
-        selectedFiles.forEach(f => {
-            if(!libGalleryArr.includes(f)) libGalleryArr.push(f);
-        });
-        renderGallery();
-    }
-    modalEl.hide();
-}
-
-// 5. XỬ LÝ UPLOAD FILE TỪ MÁY (LOCAL)
-function previewSingle(input) {
-    if (input.files && input.files[0]) {
-        // Update DataTransfer
-        dtThumb = new DataTransfer();
-        dtThumb.items.add(input.files[0]);
-        input.files = dtThumb.files;
-
-        var reader = new FileReader();
-        reader.onload = function(e) {
-            document.getElementById('preview-thumb').innerHTML = `
-                <div class="preview-item">
-                    <img src="${e.target.result}">
-                    <button type="button" class="btn-remove-img" onclick="clearThumbLocal()">&times;</button>
-                </div>`;
-            document.getElementById('inputSelectedThumb').value = ''; // Clear lib input
-        }
-        reader.readAsDataURL(input.files[0]);
-    }
-}
-
-function previewGallery(input) {
-    if (input.files) {
-        // Cộng dồn file vào DataTransfer
-        Array.from(input.files).forEach(file => {
-            dtGallery.items.add(file);
-        });
-        // Cập nhật lại input chính bằng danh sách mới
-        input.files = dtGallery.files; 
-        renderGallery();
-    }
-}
-
-// 6. HÀM RENDER GALLERY (VẼ LẠI GIAO DIỆN)
-function renderGallery() {
-    const container = document.getElementById('preview-gallery');
-    container.innerHTML = '';
-    
-    // Cập nhật input hidden thư viện (để gửi lên server)
-    document.getElementById('inputSelectedGallery').value = JSON.stringify(libGalleryArr);
-
-    // A. Vẽ ảnh từ Local Upload
-    Array.from(dtGallery.files).forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = function(e) {
-            const div = document.createElement('div');
-            div.className = 'preview-item';
-            div.innerHTML = `
-                <img src="${e.target.result}">
-                <button type="button" class="btn-remove-img" onclick="removeGalleryLocal(${index})">&times;</button>
-            `;
-            container.appendChild(div);
-        }
-        reader.readAsDataURL(file);
-    });
-
-    // B. Vẽ ảnh từ Thư viện (Bao gồm ảnh cũ)
-    libGalleryArr.forEach((filename, index) => {
-        const div = document.createElement('div');
-        div.className = 'preview-item';
-        div.innerHTML = `
-            <img src="../uploads/${filename}">
-            <button type="button" class="btn-remove-img" onclick="removeGalleryLib(${index})">&times;</button>
-        `;
-        container.appendChild(div);
-    });
-}
-
-// 7. CÁC HÀM XÓA (REMOVE)
-function clearThumbLocal() {
-    document.getElementById('thumbInput').value = '';
-    document.getElementById('preview-thumb').innerHTML = '';
-    dtThumb = new DataTransfer();
-}
-
-function clearThumbLib() {
-    document.getElementById('inputSelectedThumb').value = '';
-    document.getElementById('preview-thumb').innerHTML = '';
-}
-
-function removeGalleryLocal(index) {
-    // Xóa file khỏi DataTransfer
-    dtGallery.items.remove(index);
-    // Cập nhật lại input file
-    document.getElementById('galleryInput').files = dtGallery.files;
-    // Vẽ lại
-    renderGallery();
-}
-
-function removeGalleryLib(index) {
-    // Xóa khỏi mảng (chỉ xóa khỏi danh sách bài viết, không xóa file gốc)
-    libGalleryArr.splice(index, 1);
-    // Vẽ lại
-    renderGallery();
-}
-
-// 8. FORMAT TIỀN TỆ
 function formatCurrency(input) {
     let value = input.value.replace(/\D/g, '');
-    if (value === '') { input.value = ''; return; }
+    if (value === '') return;
     input.value = value.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 }
