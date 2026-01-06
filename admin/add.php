@@ -1,5 +1,5 @@
 <?php
-// admin/add.php - FINAL VERSION: UI MỚI + KÉO THẢ + ĐA GIÁ
+// admin/add.php - UPDATE V6: CUSTOM TOGGLE + FIX ALIGNMENT
 require_once 'auth.php';
 require_once '../includes/config.php';
 ?>
@@ -14,11 +14,11 @@ require_once '../includes/config.php';
     <!-- CSS & Libs -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <!-- Thư viện Kéo Thả Ảnh -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
 
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
+    <!-- Cache Busting (Thêm random để ép tải CSS mới) -->
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() . rand(10, 99) ?>">
+    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() . rand(10, 99) ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
@@ -52,34 +52,31 @@ require_once '../includes/config.php';
         <form action="process.php" method="POST" enctype="multipart/form-data" id="addForm">
             <div class="row g-4 justify-content-center">
 
-                <!-- CỘT TRÁI: ẢNH (KÉO THẢ) -->
+                <!-- CỘT TRÁI: ẢNH -->
                 <div class="col-12 col-lg-5 order-lg-2">
                     <div class="form-card sticky-top" style="top: 20px; z-index: 1;">
-                        <label class="form-label">HÌNH ẢNH SẢN PHẨM</label>
+                        <label class="form-label fw-bold text-uppercase text-secondary" style="font-size: 12px;">Hình
+                            ảnh sản phẩm</label>
                         <div class="text-secondary small mb-3 fst-italic">
-                            <i class="ph-fill ph-info"></i> Ảnh đầu tiên sẽ là <b>Ảnh Bìa</b>. Kéo thả để sắp xếp.
+                            <i class="ph-fill ph-info"></i> Ảnh đầu tiên là <b>Ảnh Bìa</b>. Kéo thả để sắp xếp.
                         </div>
 
-                        <!-- KHU VỰC UPLOAD -->
+                        <!-- Khu vực Upload -->
                         <div class="image-uploader-area" onclick="document.getElementById('fileInput').click()">
                             <i class="ph-duotone ph-cloud-arrow-up text-secondary" style="font-size: 48px;"></i>
                             <div class="fw-bold mt-2 text-dark">Tải ảnh lên</div>
                             <div class="text-secondary small">Hỗ trợ nhiều ảnh cùng lúc</div>
                         </div>
 
-                        <!-- INPUT ẨN -->
                         <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
-                        <input type="hidden" name="library_images" id="libraryInput"> <!-- Chứa ảnh chọn từ thư viện -->
+                        <input type="hidden" name="library_images" id="libraryInput">
 
-                        <!-- NÚT THƯ VIỆN -->
                         <div class="text-end mt-3">
                             <button type="button" class="btn btn-sm btn-light border fw-bold text-secondary"
                                 onclick="openLibrary()">
                                 <i class="ph-bold ph-image"></i> Chọn từ Thư viện
                             </button>
                         </div>
-
-                        <!-- LƯỚI ẢNH (SORTABLE) -->
                         <div id="imageGrid" class="sortable-grid"></div>
                     </div>
                 </div>
@@ -87,17 +84,17 @@ require_once '../includes/config.php';
                 <!-- CỘT PHẢI: THÔNG TIN -->
                 <div class="col-12 col-lg-7 order-lg-1">
                     <div class="form-card">
-
                         <div class="mb-4">
-                            <label class="form-label">Mã Acc / Tiêu đề <span class="text-danger">*</span></label>
+                            <label class="form-label fw-bold">Mã Acc / Tiêu đề <span
+                                    class="text-danger">*</span></label>
                             <input type="text" name="title" class="form-control custom-input"
                                 placeholder="Ví dụ: Acc VIP Rank Cao..." required>
                         </div>
 
-                        <!-- CHỌN CHẾ ĐỘ (SWITCH) -->
-                        <label class="form-label mb-3">LOẠI SẢN PHẨM (Có thể chọn cả 2)</label>
+                        <label class="form-label mb-3 fw-bold text-uppercase text-secondary"
+                            style="font-size: 12px;">Tùy chọn bán hàng</label>
 
-                        <!-- Switch Bán -->
+                        <!-- Switch Bán (DÙNG CUSTOM TOGGLE - KHÔNG DÙNG BOOTSTRAP) -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-warning bg-opacity-10 p-2 rounded-3 text-warning">
@@ -108,24 +105,24 @@ require_once '../includes/config.php';
                                     <small class="text-secondary">Khách mua đứt acc này</small>
                                 </div>
                             </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="switchSell" checked
+                            <div>
+                                <input class="custom-toggle" type="checkbox" id="switchSell" checked
                                     onchange="toggleSections()">
                             </div>
                         </div>
 
                         <!-- Khu vực nhập giá Bán -->
                         <div id="sellSection" class="mb-4 ps-4 border-start border-4 border-warning">
-                            <label class="form-label text-warning">Giá Bán (VNĐ)</label>
+                            <label class="label-highlight">Giá Bán (VNĐ)</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-white border-end-0 fw-bold text-success">₫</span>
                                 <input type="text" name="price"
-                                    class="form-control custom-input price-input-lg border-start-0 ps-0" placeholder="0"
+                                    class="form-control custom-input price-input-lg border-start-0" placeholder="0"
                                     oninput="formatCurrency(this)">
                             </div>
                         </div>
 
-                        <!-- Switch Thuê -->
+                        <!-- Switch Thuê (DÙNG CUSTOM TOGGLE) -->
                         <div class="mode-switch-group">
                             <div class="d-flex align-items-center gap-3">
                                 <div class="bg-info bg-opacity-10 p-2 rounded-3 text-info">
@@ -136,8 +133,8 @@ require_once '../includes/config.php';
                                     <small class="text-secondary">Khách thuê theo giờ/ngày</small>
                                 </div>
                             </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" id="switchRent"
+                            <div>
+                                <input class="custom-toggle" type="checkbox" id="switchRent"
                                     onchange="toggleSections()">
                             </div>
                         </div>
@@ -145,19 +142,19 @@ require_once '../includes/config.php';
                         <!-- Khu vực nhập giá Thuê -->
                         <div id="rentSection" class="mb-4 ps-4 border-start border-4 border-info"
                             style="display: none;">
-                            <label class="form-label text-info">Giá Thuê (VNĐ)</label>
+                            <label class="label-highlight" style="color:#0ea5e9;">Giá Thuê (VNĐ)</label>
                             <div class="row g-2">
                                 <div class="col-8">
                                     <div class="input-group">
                                         <span
                                             class="input-group-text bg-white border-end-0 fw-bold text-success">₫</span>
                                         <input type="text" name="price_rent"
-                                            class="form-control custom-input price-input-lg border-start-0 ps-0"
+                                            class="form-control custom-input price-input-lg border-start-0"
                                             placeholder="0" oninput="formatCurrency(this)">
                                     </div>
                                 </div>
                                 <div class="col-4">
-                                    <select name="unit" class="form-select h-100 fw-bold">
+                                    <select name="unit" class="form-select custom-input h-100 fw-bold">
                                         <option value="1">/ Giờ</option>
                                         <option value="2">/ Ngày</option>
                                     </select>
@@ -170,10 +167,8 @@ require_once '../includes/config.php';
                                 <i class="ph-bold ph-check-circle me-2"></i> ĐĂNG SẢN PHẨM NGAY
                             </button>
                         </div>
-
                     </div>
                 </div>
-
             </div>
         </form>
         <div style="height: 80px;"></div>
@@ -188,11 +183,16 @@ require_once '../includes/config.php';
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <div class="library-scroll-area" id="scrollArea" style="height: 400px; overflow-y: auto;">
-                        <div class="lib-grid p-3" id="libGrid"></div>
+                    <div class="library-scroll-area" id="scrollArea" style="height: 500px; overflow-y: auto;">
+                        <div class="nft-grid-5 p-3" id="libGrid"></div>
+                        <div id="libLoading" class="text-center py-3 d-none">
+                            <div class="spinner-border text-warning spinner-border-sm" role="status"></div>
+                            <span class="ms-2 small text-muted">Đang tải thêm...</span>
+                        </div>
                     </div>
                 </div>
-                <div class="modal-footer border-top">
+                <div class="modal-footer border-top bg-light">
+                    <div class="me-auto text-secondary small" id="selectedCount">Đã chọn: 0</div>
                     <button type="button" class="btn btn-warning text-white fw-bold rounded-pill px-4"
                         onclick="confirmLibrarySelection()">
                         <i class="ph-bold ph-check"></i> Chọn ảnh
@@ -212,7 +212,7 @@ require_once '../includes/config.php';
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="assets/js/admin-add.js?v=<?= time() ?>"></script>
+    <script src="assets/js/admin-add.js?v=<?= time() . rand(10, 99) ?>"></script>
 </body>
 
 </html>

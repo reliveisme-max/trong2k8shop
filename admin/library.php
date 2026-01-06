@@ -1,5 +1,5 @@
 <?php
-// admin/library.php - NFT STYLE COLLECTION
+// admin/library.php - UPDATE V4: GRID 8 CỘT + INFINITE SCROLL + CHỌN TẤT CẢ
 require_once 'auth.php';
 require_once '../includes/config.php';
 
@@ -8,7 +8,7 @@ $msg = '';
 // 1. XỬ LÝ XÓA ẢNH (LOGIC MẠNH)
 if (isset($_POST['action_delete']) && $_POST['action_delete'] == '1' && !empty($_POST['selected_files'])) {
 
-    $filesToDelete = array_map('basename', $_POST['selected_files']);
+    $filesToDelete = $_POST['selected_files']; // Mảng tên file
     $countPhysical = 0;
     $countDB = 0;
 
@@ -18,12 +18,12 @@ if (isset($_POST['action_delete']) && $_POST['action_delete'] == '1' && !empty($
             unlink($path);
             $countPhysical++;
         }
-        // Xóa Thumb
+        // Xóa Thumb trong DB nếu trùng
         $stmtThumb = $conn->prepare("UPDATE products SET thumb = '' WHERE thumb = :img");
         $stmtThumb->execute([':img' => $filename]);
     }
 
-    // Xóa trong Gallery
+    // Quét và xóa ảnh trong Gallery của các acc (JSON)
     $stmtAll = $conn->prepare("SELECT id, gallery FROM products");
     $stmtAll->execute();
     $allProducts = $stmtAll->fetchAll();
@@ -46,23 +46,6 @@ if (isset($_POST['action_delete']) && $_POST['action_delete'] == '1' && !empty($
         }
     }
     $msg = "Đã xóa $countPhysical ảnh và làm sạch $countDB Acc liên quan!";
-}
-
-// 2. QUÉT ẢNH
-$dir = "../uploads/";
-$images = [];
-if (is_dir($dir)) {
-    $files = scandir($dir);
-    foreach ($files as $file) {
-        if ($file !== '.' && $file !== '..') {
-            $ext = strtolower(pathinfo($file, PATHINFO_EXTENSION));
-            if (in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp'])) {
-                $images[$file] = filemtime($dir . $file);
-            }
-        }
-    }
-    arsort($images);
-    $images = array_keys($images);
 }
 ?>
 
@@ -106,44 +89,45 @@ if (is_dir($dir)) {
 
         <!-- HEADER -->
         <div class="top-header mb-4">
-            <div class="d-flex align-items-center justify-content-between w-100">
+            <div class="d-flex align-items-center justify-content-between w-100 flex-wrap gap-3">
                 <div>
                     <h4 class="m-0 fw-bold text-dark">Thư viện Assets</h4>
-                    <small class="text-secondary">Tổng cộng: <?= count($images) ?> files</small>
+                    <small class="text-secondary">Quản lý toàn bộ ảnh đã tải lên</small>
                 </div>
 
-                <!-- Nút tải ảnh nhanh -->
-                <a href="add.php"
-                    class="btn btn-light border d-flex align-items-center gap-2 rounded-pill px-3 fw-bold">
-                    <i class="ph-bold ph-upload-simple"></i> <span class="d-none d-sm-inline">Tải lên</span>
-                </a>
+                <div class="d-flex gap-2">
+                    <!-- Nút Chọn tất cả -->
+                    <button type="button" class="btn btn-white border fw-bold rounded-pill px-3"
+                        onclick="selectAllImages()">
+                        <i class="ph-bold ph-checks"></i> Chọn tất cả
+                    </button>
+
+                    <!-- Nút Tải ảnh -->
+                    <a href="add.php" class="btn btn-dark d-flex align-items-center gap-2 rounded-pill px-3 fw-bold">
+                        <i class="ph-bold ph-upload-simple"></i> <span class="d-none d-sm-inline">Tải lên</span>
+                    </a>
+                </div>
             </div>
         </div>
 
         <form method="POST" id="libForm">
             <input type="hidden" name="action_delete" value="1">
 
-            <!-- LƯỚI ẢNH (NFT GRID) -->
-            <div class="nft-grid">
-                <?php foreach ($images as $img): ?>
-                <label class="nft-card">
-                    <input type="checkbox" name="selected_files[]" value="<?= $img ?>" onchange="updateToolbar()">
-                    <img src="../uploads/<?= $img ?>" loading="lazy">
+            <!-- LƯỚI ẢNH 8 CỘT (Grid container) -->
+            <!-- Dữ liệu sẽ được JS load vào đây -->
+            <div class="nft-grid-8" id="mainLibGrid"></div>
 
-                    <!-- Dấu tích V khi chọn -->
-                    <div class="nft-check-icon">
-                        <i class="ph-bold ph-check"></i>
-                    </div>
-                </label>
-                <?php endforeach; ?>
+            <!-- Loading Spinner -->
+            <div id="pageLoading" class="text-center py-5">
+                <div class="spinner-border text-warning" role="status"></div>
+                <p class="mt-2 text-muted small">Đang tải dữ liệu...</p>
             </div>
 
-            <?php if (empty($images)): ?>
-            <div class="text-center py-5 text-secondary">
-                <i class="ph-duotone ph-image" style="font-size: 60px; opacity: 0.3;"></i>
-                <p class="mt-3">Chưa có ảnh nào.</p>
+            <!-- End of list message -->
+            <div id="endOfList" class="text-center py-5 text-muted d-none">
+                <i class="ph-duotone ph-check-circle fs-2 mb-2"></i>
+                <p>Đã hiển thị toàn bộ ảnh</p>
             </div>
-            <?php endif; ?>
 
             <!-- THANH CÔNG CỤ NỔI (FLOATING TOOLBAR) -->
             <div class="floating-toolbar" id="floatingBar">
@@ -159,30 +143,18 @@ if (is_dir($dir)) {
             </div>
 
         </form>
+
+        <!-- Khoảng trống đệm dưới cùng -->
+        <div style="height: 100px;"></div>
     </main>
 
     <!-- MOBILE NAV -->
     <div class="bottom-nav">
-        <a href="index.php" class="nav-item">
-            <i class="ph-duotone ph-squares-four"></i> <span>Home</span>
-        </a>
-        <a href="index.php?type=0" class="nav-item">
-            <i class="ph-duotone ph-tag"></i> <span>Kho</span>
-        </a>
+        <a href="index.php" class="nav-item"><i class="ph-duotone ph-squares-four"></i></a>
         <a href="add.php" class="nav-item">
             <div class="nav-item-add"><i class="ph-bold ph-plus"></i></div>
         </a>
-        <a href="library.php" class="nav-item active">
-            <i class="ph-duotone ph-image"></i> <span>Ảnh</span>
-        </a>
-        <div class="dropup">
-            <div class="nav-item" data-bs-toggle="dropdown"><i class="ph-duotone ph-user-circle"></i> <span>Menu</span>
-            </div>
-            <ul class="dropdown-menu mb-3 shadow-lg border-0">
-                <li><a class="dropdown-item py-2" href="change_pass.php">Đổi mật khẩu</a></li>
-                <li><a class="dropdown-item py-2 text-danger" href="logout.php">Đăng xuất</a></li>
-            </ul>
-        </div>
+        <a href="library.php" class="nav-item active"><i class="ph-duotone ph-image"></i></a>
     </div>
 
     <!-- SCRIPT -->
@@ -199,42 +171,136 @@ if (is_dir($dir)) {
     });
     <?php endif; ?>
 
-    // Xử lý thanh công cụ nổi
+    // --- LOGIC INFINITE SCROLL & CHỌN ẢNH ---
+    let currentPage = 1;
+    let isLoading = false;
+    let hasMore = true;
+
+    // Khởi chạy
+    document.addEventListener('DOMContentLoaded', function() {
+        loadImages(1);
+
+        // Sự kiện cuộn trang (Window Scroll)
+        window.addEventListener('scroll', () => {
+            if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 500) {
+                if (hasMore && !isLoading) {
+                    loadImages(currentPage + 1);
+                }
+            }
+        });
+    });
+
+    async function loadImages(page) {
+        if (isLoading) return;
+        isLoading = true;
+
+        // Hiện loading
+        document.getElementById('pageLoading').classList.remove('d-none');
+
+        try {
+            const response = await fetch(`get_images.php?page=${page}`);
+            const data = await response.json();
+
+            if (data.status === 'success') {
+                const grid = document.getElementById('mainLibGrid');
+
+                data.data.forEach(filename => {
+                    const div = document.createElement('div');
+                    // Sử dụng class nft-card (CSS V4 đã chỉnh vuông + contain)
+                    div.className = 'nft-card';
+                    div.innerHTML = `
+                        <input type="checkbox" name="selected_files[]" value="${filename}" style="display:none">
+                        <img src="../uploads/${filename}" loading="lazy" alt="img">
+                        <div class="nft-check-icon"><i class="ph-bold ph-check"></i></div>
+                    `;
+
+                    // Sự kiện click chọn
+                    div.onclick = function() {
+                        toggleSelection(this);
+                    };
+
+                    grid.appendChild(div);
+                });
+
+                hasMore = data.has_more;
+                currentPage = page;
+
+                if (!hasMore) {
+                    document.getElementById('endOfList').classList.remove('d-none');
+                }
+            }
+        } catch (error) {
+            console.error('Lỗi tải ảnh:', error);
+        } finally {
+            isLoading = false;
+            document.getElementById('pageLoading').classList.add('d-none');
+        }
+    }
+
+    // Toggle chọn 1 ảnh
+    function toggleSelection(card) {
+        card.classList.toggle('active'); // CSS V4 dùng class .active cho viền cam
+        const checkbox = card.querySelector('input');
+        checkbox.checked = !checkbox.checked;
+        updateToolbar();
+    }
+
+    // Chọn tất cả (Chỉ chọn những ảnh đã load)
+    function selectAllImages() {
+        const cards = document.querySelectorAll('.nft-card');
+        let allActive = true;
+
+        // Kiểm tra xem đã chọn hết chưa
+        cards.forEach(card => {
+            if (!card.classList.contains('active')) allActive = false;
+        });
+
+        // Nếu chưa chọn hết -> Chọn tất cả. Nếu đã chọn hết -> Bỏ chọn tất cả
+        const targetState = !allActive;
+
+        cards.forEach(card => {
+            if (targetState) card.classList.add('active');
+            else card.classList.remove('active');
+
+            card.querySelector('input').checked = targetState;
+        });
+        updateToolbar();
+    }
+
+    // Cập nhật thanh công cụ xóa
     function updateToolbar() {
-        const checkboxes = document.querySelectorAll('input[name="selected_files[]"]:checked');
+        const checkedCount = document.querySelectorAll('input[name="selected_files[]"]:checked').length;
         const bar = document.getElementById('floatingBar');
         const countText = document.getElementById('countText');
 
-        if (checkboxes.length > 0) {
+        if (checkedCount > 0) {
             bar.classList.add('active');
-            countText.innerText = `Đã chọn ${checkboxes.length}`;
+            countText.innerText = `Đã chọn ${checkedCount}`;
         } else {
             bar.classList.remove('active');
         }
     }
 
-    // Hủy chọn tất cả
+    // Hủy chọn
     function deselectAll() {
-        const checkboxes = document.querySelectorAll('input[name="selected_files[]"]');
-        checkboxes.forEach(cb => cb.checked = false);
+        document.querySelectorAll('.nft-card').forEach(c => {
+            c.classList.remove('active');
+            c.querySelector('input').checked = false;
+        });
         updateToolbar();
     }
 
     // Xác nhận xóa
     function confirmDelete() {
-        const checkboxes = document.querySelectorAll('input[name="selected_files[]"]:checked');
-
+        const checkedCount = document.querySelectorAll('input[name="selected_files[]"]:checked').length;
         Swal.fire({
-            title: `Xóa ${checkboxes.length} ảnh?`,
+            title: `Xóa ${checkedCount} ảnh?`,
             text: "Cảnh báo: Ảnh trong các bài viết liên quan cũng sẽ bị gỡ bỏ!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#9ca3af',
             confirmButtonText: 'Xóa vĩnh viễn',
-            cancelButtonText: 'Hủy',
-            background: '#fff',
-            color: '#000'
+            cancelButtonText: 'Hủy'
         }).then((result) => {
             if (result.isConfirmed) {
                 document.getElementById('libForm').submit();

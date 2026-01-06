@@ -1,23 +1,21 @@
 <?php
-// admin/index.php - FINAL VERSION: UI MỚI + LOGIC ĐA GIÁ + XÓA NHIỀU
+// admin/index.php - UPDATE V9: FLAT UI & MINIMAL BADGES
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
 
-// --- 1. XỬ LÝ XÓA NHIỀU (BULK DELETE) ---
+// --- 1. XỬ LÝ XÓA NHIỀU ---
 if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
-    $ids = $_POST['selected_ids']; // Mảng các ID được chọn
+    $ids = $_POST['selected_ids'];
     $countDeleted = 0;
 
     foreach ($ids as $id) {
         $id = (int)$id;
-        // Lấy thông tin ảnh để xóa file
         $stmt = $conn->prepare("SELECT thumb, gallery FROM products WHERE id = :id");
         $stmt->execute([':id' => $id]);
         $prod = $stmt->fetch();
 
         if ($prod) {
-            // Xóa ảnh
             if (!empty($prod['thumb']) && file_exists("../uploads/" . $prod['thumb'])) {
                 @unlink("../uploads/" . $prod['thumb']);
             }
@@ -27,7 +25,6 @@ if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
                     if (file_exists("../uploads/" . $g)) @unlink("../uploads/" . $g);
                 }
             }
-            // Xóa DB
             $conn->prepare("DELETE FROM products WHERE id = :id")->execute([':id' => $id]);
             $countDeleted++;
         }
@@ -36,25 +33,22 @@ if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
     exit;
 }
 
-// --- 2. XỬ LÝ LỌC & TÌM KIẾM ---
-$viewType = isset($_GET['type']) ? $_GET['type'] : ''; // ''=All, 'sell', 'rent'
+// --- 2. LỌC & TÌM KIẾM ---
+$viewType = isset($_GET['type']) ? $_GET['type'] : '';
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit    = 10;
 $offset   = ($page - 1) * $limit;
 
-// Xây dựng câu lệnh SQL
 $whereArr = [];
 $params = [];
 
-// Lọc theo loại (Dựa vào giá)
 if ($viewType === 'sell') {
     $whereArr[] = "price > 0";
 } elseif ($viewType === 'rent') {
     $whereArr[] = "price_rent > 0";
 }
 
-// Tìm kiếm
 if ($keyword) {
     $whereArr[] = "(title LIKE :kw OR id = :id)";
     $params[':kw'] = "%$keyword%";
@@ -63,13 +57,11 @@ if ($keyword) {
 
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
-// Đếm tổng
 $stmtCount = $conn->prepare("SELECT COUNT(*) FROM products $whereSql");
 $stmtCount->execute($params);
 $totalRecords = $stmtCount->fetchColumn();
 $totalPages = ceil($totalRecords / $limit);
 
-// Lấy dữ liệu (Fix lỗi bindValue bằng cách đưa limit/offset thẳng vào chuỗi)
 $sql = "SELECT * FROM products $whereSql ORDER BY id DESC LIMIT $limit OFFSET $offset";
 $stmt = $conn->prepare($sql);
 foreach ($params as $key => $val) $stmt->bindValue($key, $val);
@@ -93,14 +85,15 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
-    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
+
+    <!-- Cache Busting để đảm bảo load CSS mới -->
+    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() . rand(10, 99) ?>">
+    <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() . rand(10, 99) ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
 
-    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="brand"><i class="ph-fill ph-heart"></i> ADMIN PANEL</div>
         <nav class="d-flex flex-column gap-2">
@@ -116,7 +109,6 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
         </nav>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="main-content">
         <div class="content-container">
 
@@ -155,39 +147,34 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
                 </div>
             </div>
 
-            <!-- CÔNG CỤ: LỌC + TÌM KIẾM + THÊM -->
-            <div
-                class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3 p-3 bg-white border rounded-4 shadow-sm">
-                <!-- Nhóm bên trái: Bộ lọc + Tìm kiếm -->
-                <div class="d-flex flex-wrap align-items-center gap-2">
-                    <a href="index.php"
-                        class="btn btn-sm rounded-pill fw-bold <?= $viewType == '' ? 'btn-dark' : 'btn-light border' ?>">Tất
-                        cả</a>
-                    <a href="index.php?type=sell"
-                        class="btn btn-sm rounded-pill fw-bold <?= $viewType == 'sell' ? 'btn-warning text-white' : 'btn-light border' ?>">Bán</a>
-                    <a href="index.php?type=rent"
-                        class="btn btn-sm rounded-pill fw-bold <?= $viewType == 'rent' ? 'btn-info text-white' : 'btn-light border' ?>">Thuê</a>
+            <!-- TOOLBAR -->
+            <div class="admin-toolbar">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    <div class="filter-group">
+                        <a href="index.php" class="filter-btn <?= $viewType == '' ? 'active' : '' ?>">Tất cả</a>
+                        <a href="index.php?type=sell"
+                            class="filter-btn <?= $viewType == 'sell' ? 'active' : '' ?>">Bán</a>
+                        <a href="index.php?type=rent"
+                            class="filter-btn <?= $viewType == 'rent' ? 'active' : '' ?>">Thuê</a>
+                    </div>
 
-                    <!-- Form Tìm kiếm -->
-                    <form action="" method="GET" class="d-flex align-items-center ms-2">
+                    <form action="" method="GET" class="search-group">
                         <?php if ($viewType): ?><input type="hidden" name="type"
                             value="<?= $viewType ?>"><?php endif; ?>
-                        <div class="input-group input-group-sm">
-                            <span class="input-group-text bg-white border-end-0"><i
-                                    class="ph-bold ph-magnifying-glass"></i></span>
-                            <input type="text" name="q" class="form-control border-start-0"
-                                placeholder="Tìm tên, mã số..." value="<?= htmlspecialchars($keyword) ?>">
-                        </div>
+                        <i class="ph-bold ph-magnifying-glass"></i>
+                        <input type="text" name="q" placeholder="Tìm tên, mã số..."
+                            value="<?= htmlspecialchars($keyword) ?>">
                     </form>
                 </div>
 
-                <!-- Nhóm bên phải: Nút Đăng + Nút Xóa -->
                 <div class="d-flex align-items-center gap-2">
                     <button type="button" onclick="submitDelete()" id="btnDeleteMulti"
-                        class="btn btn-danger btn-sm rounded-pill fw-bold" style="display:none;">
+                        class="btn btn-danger btn-sm rounded-pill fw-bold px-3" style="display:none;">
                         <i class="ph-bold ph-trash"></i> Xóa (<span id="countSelect">0</span>)
                     </button>
-                    <a href="add.php" class="btn btn-warning text-white btn-sm rounded-pill fw-bold px-3">
+
+                    <a href="add.php"
+                        class="btn btn-warning btn-sm rounded-pill fw-bold px-3 py-2 d-flex align-items-center gap-2">
                         <i class="ph-bold ph-plus"></i> Đăng Acc
                     </a>
                 </div>
@@ -221,30 +208,31 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
                                     <td><img src="../uploads/<?= $p['thumb'] ?>" class="thumb-img" loading="lazy"></td>
                                     <td>
                                         <div class="fw-bold text-dark">#<?= $p['id'] ?> - <?= $p['title'] ?></div>
-                                        <div class="d-flex gap-1 mt-1">
+                                        <div class="d-flex gap-2 mt-2">
+                                            <!-- FLAT BADGES -->
                                             <?php if ($p['price'] > 0): ?>
-                                            <span class="badge badge-soft-success" style="font-size:10px">BÁN</span>
+                                            <span class="badge-soft badge-sell">BÁN</span>
                                             <?php endif; ?>
                                             <?php if ($p['price_rent'] > 0): ?>
-                                            <span class="badge badge-soft-success"
-                                                style="font-size:10px; background:#eff6ff; color:#3b82f6">THUÊ</span>
+                                            <span class="badge-soft badge-rent">THUÊ</span>
                                             <?php endif; ?>
                                         </div>
                                     </td>
                                     <td>
+                                        <!-- FLAT PRICE STYLE -->
                                         <?php if ($p['price'] > 0): ?>
-                                        <div class="text-success fw-bold"><?= formatPrice($p['price']) ?></div>
+                                        <div class="price-display-sell"><?= formatPrice($p['price']) ?></div>
                                         <?php endif; ?>
                                         <?php if ($p['price_rent'] > 0): ?>
-                                        <div class="text-primary small">
+                                        <div class="price-display-rent">
                                             <?= formatPrice($p['price_rent']) ?>/<?= $p['unit'] == 2 ? 'ngày' : 'giờ' ?>
                                         </div>
                                         <?php endif; ?>
                                     </td>
                                     <td>
                                         <?= $p['status'] == 1
-                                                ? '<span class="badge-soft badge-soft-success">Đang bán</span>'
-                                                : '<span class="badge-soft badge-soft-danger">Đã bán/Ẩn</span>' ?>
+                                                ? '<span class="badge-soft badge-status-active">Đang bán</span>'
+                                                : '<span class="badge-soft badge-status-sold">Đã bán/Ẩn</span>' ?>
                                     </td>
                                     <td class="text-end pe-4">
                                         <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank"
@@ -287,7 +275,6 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
         </div>
     </main>
 
-    <!-- MOBILE NAV -->
     <div class="bottom-nav">
         <a href="index.php" class="nav-item active"><i class="ph-duotone ph-squares-four"></i></a>
         <a href="add.php" class="nav-item">
@@ -298,14 +285,18 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Thông báo SweetAlert
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('msg') === 'deleted_multi') {
         Swal.fire('Thành công', `Đã xóa ${urlParams.get('count')} Acc`, 'success');
         window.history.replaceState({}, document.title, "index.php");
+    } else if (urlParams.get('msg') === 'added') {
+        Swal.fire('Thành công', 'Đã đăng acc mới', 'success');
+        window.history.replaceState({}, document.title, "index.php");
+    } else if (urlParams.get('msg') === 'updated') {
+        Swal.fire('Thành công', 'Đã cập nhật acc', 'success');
+        window.history.replaceState({}, document.title, "index.php");
     }
 
-    // Checkbox Logic
     function toggleAll(source) {
         document.querySelectorAll('.item-check').forEach(c => c.checked = source.checked);
         updateDeleteBtn();
@@ -328,9 +319,7 @@ $countRent = $conn->query("SELECT COUNT(*) FROM products WHERE price_rent > 0")-
             confirmButtonText: 'Xóa ngay',
             cancelButtonText: 'Hủy'
         }).then((result) => {
-            if (result.isConfirmed) {
-                document.getElementById('formMultiDelete').submit();
-            }
+            if (result.isConfirmed) document.getElementById('formMultiDelete').submit();
         })
     }
 
