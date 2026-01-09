@@ -1,151 +1,321 @@
-<?php
-// admin/process.php - UPDATE: LƯU TAG & TRẠNG THÁI ORDER
-require_once 'auth.php';
-require_once '../includes/config.php';
-require_once '../includes/functions.php';
+// admin/assets/js/pages/bulk-upload.js
 
-// Chỉ xử lý POST
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header("Location: index.php");
-    exit;
+let rowCount = 0; // Đếm số dòng hiển thị (1, 2, 3...)
+let globalIndex = 0; // ID định danh duy nhất cho mỗi dòng (để không bị trùng khi xóa)
+let rowData = {}; // Kho lưu trữ File: { 1: [File, File], 2: [] }
+let currentRowId = 0; // ID của dòng đang mở Modal
+
+document.addEventListener('DOMContentLoaded', () => {
+// 1. Tạo sẵn 20 dòng khi vào trang
+addRows(20);
+
+// 2. Lắng nghe sự kiện các nút bấm
+document.getElementById('btnApplyGlobal').addEventListener('click', applyGlobal);
+document.getElementById('btnAddRows').addEventListener('click', () => addRows(5));
+document.getElementById('btnSubmitBulk').addEventListener('click', submitBulk);
+
+// 3. Lắng nghe sự kiện chọn file trong Modal
+const fileInput = document.getElementById('modalFileInput');
+if (fileInput) {
+fileInput.addEventListener('change', function(e) {
+if (currentRowId > 0 && e.target.files.length > 0) {
+addFilesToRow(currentRowId, e.target.files);
+this.value = ''; // Reset để chọn lại được file cũ
 }
+});
+}
+});
 
-try {
-    $id = isset($_POST['id']) ? (int)$_POST['id'] : 0;
-    $userId = $_SESSION['admin_id'];
-    $prefix = $_SESSION['prefix'] ?? '';
+// ============================================================
+// 1. QUẢN LÝ DÒNG (ROWS)
+// ============================================================
 
-    // 1. XỬ LÝ TIÊU ĐỀ (MÃ SỐ)
-    $title = '';
-    $inputTitle = isset($_POST['title']) ? trim($_POST['title']) : '';
+function addRows(num) {
+const tbody = document.getElementById('tableBody');
+if (!tbody) return;
 
-    if ($id == 0) { // THÊM MỚI
-        if (empty($inputTitle)) {
-            // Tự động tạo mã nếu để trống
-            if (empty($prefix)) die("❌ Lỗi: Bạn chưa nhập Mã Acc!");
+for (let i = 0; i < num; i++) { globalIndex++; rowCount++; // Tính mã số hiển thị (MS101, MS102...) // BULK_CONFIG được
+    truyền từ PHP ở file add.php const displayNum=BULK_CONFIG.startNum + (rowCount - 1); // Khởi tạo kho ảnh rỗng cho
+    dòng này rowData[globalIndex]=[]; const tr=document.createElement('tr'); tr.id=`row_${globalIndex}`; tr.innerHTML=`
+    <td class="text-center fw-bold text-secondary align-middle">${rowCount}</td>
 
-            $stmtMax = $conn->prepare("SELECT title FROM products WHERE title LIKE :p ORDER BY LENGTH(title) DESC, title DESC LIMIT 1");
-            $stmtMax->execute([':p' => $prefix . '%']);
-            $lastTitle = $stmtMax->fetchColumn();
+    <td class="text-center">
+        <div class="img-cell-box mx-auto" onclick="openImageModal(${globalIndex})" id="imgCell_${globalIndex}">
+            <i class="ph-bold ph-plus text-secondary fs-4"></i>
+        </div>
+    </td>
 
-            $nextNum = ($lastTitle && preg_match('/(\d+)$/', $lastTitle, $matches)) ? (int)$matches[1] + 1 : 1;
-            $title = $prefix . $nextNum;
-        } else {
-            $title = $inputTitle;
-            // Check trùng
-            $check = $conn->prepare("SELECT COUNT(*) FROM products WHERE title = :t");
-            $check->execute([':t' => $title]);
-            if ($check->fetchColumn() > 0) die("⚠️ Mã Acc <b>$title</b> đã tồn tại!");
-        }
-    } else { // CẬP NHẬT
-        if (empty($inputTitle)) die("❌ Lỗi: Mã Acc không được để trống!");
-        $title = $inputTitle;
-        // Check trùng (trừ chính nó)
-        $check = $conn->prepare("SELECT COUNT(*) FROM products WHERE title = :t AND id != :i");
-        $check->execute([':t' => $title, ':i' => $id]);
-        if ($check->fetchColumn() > 0) die("⚠️ Mã Acc <b>$title</b> đã tồn tại!");
+    <td>
+        <input type="text" class="form-control fw-bold text-primary" name="titles[${globalIndex}]"
+            value="${BULK_CONFIG.prefix}${displayNum}">
+    </td>
+
+    <td>
+        <input type="text" class="form-control" name="prices[${globalIndex}]" placeholder="0"
+            oninput="formatPrice(this)">
+    </td>
+
+    <td>
+        <input type="text" class="form-control text-secondary" name="notes[${globalIndex}]" placeholder="...">
+    </td>
+
+    <td class="text-center align-middle">
+        <i class="ph-bold ph-x text-danger fs-5 cursor-pointer" onclick="removeRow(${globalIndex})"
+            style="cursor:pointer"></i>
+    </td>
+    `;
+    tbody.appendChild(tr);
+    }
     }
 
-    // 2. DỮ LIỆU CƠ BẢN
-    $price = isset($_POST['price']) ? (int)str_replace(['.', ','], '', $_POST['price']) : 0;
-    $priceRent = isset($_POST['price_rent']) ? (int)str_replace(['.', ','], '', $_POST['price_rent']) : 0;
-    $unit = isset($_POST['unit']) ? (int)$_POST['unit'] : 2;
-    $privateNote = $_POST['private_note'] ?? '';
-    $status = isset($_POST['status']) ? 1 : ($id == 0 ? 1 : 0); // Mới thì auto hiện, sửa thì theo form (nếu có)
-
-    // [MỚI] Xử lý Acc Order (Checkbox)
-    $isOrder = ($_SESSION['role'] == 1) ? 0 : 1;
-
-    // Logic loại acc (để tương thích code cũ)
-    $type = ($priceRent > 0 && $price == 0) ? 1 : 0;
-
-    // 3. XỬ LÝ ẢNH
-    $finalGallery = [];
-    if (isset($_POST['final_gallery_list'])) {
-        $finalGallery = json_decode($_POST['final_gallery_list'], true);
+    function removeRow(id) {
+    const row = document.getElementById(`row_${id}`);
+    if (row) {
+    row.remove();
+    delete rowData[id]; // Xóa dữ liệu ảnh trong bộ nhớ để giải phóng RAM
     }
-    if (empty($finalGallery) || !is_array($finalGallery)) die("❌ Lỗi: Chưa có ảnh nào!");
+    }
 
-    $thumb = $finalGallery[0];
-    $galleryJson = json_encode($finalGallery);
+    // ============================================================
+    // 2. QUẢN LÝ ẢNH (MODAL)
+    // ============================================================
 
-    // =========================================================
-    // 4. THỰC THI SQL (LƯU SẢN PHẨM)
-    // =========================================================
+    // Hàm này cần public ra window để gọi được từ onclick trong HTML
+    window.openImageModal = function(id) {
+    currentRowId = id;
 
-    if ($id == 0) {
-        // INSERT
-        $sql = "INSERT INTO products (
-                    title, price, price_rent, type, unit, 
-                    thumb, gallery, status, is_order, 
-                    created_at, views, user_id, private_note, is_featured, view_order
-                ) VALUES (
-                    :title, :price, :rent, :type, :unit, 
-                    :thumb, :gallery, :status, :is_order, 
-                    NOW(), 0, :uid, :note, 0, 0
-                )";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':title' => $title,
-            ':price' => $price,
-            ':rent' => $priceRent,
-            ':type' => $type,
-            ':unit' => $unit,
-            ':thumb' => $thumb,
-            ':gallery' => $galleryJson,
-            ':status' => $status,
-            ':is_order' => $isOrder, // [MỚI]
-            ':uid' => $userId,
-            ':note' => $privateNote
-        ]);
-        $productId = $conn->lastInsertId();
-        $msg = "added";
+    // Lấy mã acc hiện tại để hiển thị lên tiêu đề Modal
+    const titleInput = document.querySelector(`input[name="titles[${id}]"]`);
+    if(titleInput) {
+    document.getElementById('modalRowTitle').innerText = titleInput.value;
+    }
+
+    renderModalImages();
+
+    // Mở Modal Bootstrap
+    const modalEl = document.getElementById('imageModal');
+    const modal = new bootstrap.Modal(modalEl);
+    modal.show();
+    }
+
+    // Hàm này cũng cần public để gọi từ nút xóa trong HTML
+    window.removeRow = function(id) {
+    removeRow(id);
+    }
+
+    // Hàm này public để nút xóa ảnh trong modal gọi
+    window.removeImage = function(index) {
+    rowData[currentRowId].splice(index, 1);
+    renderModalImages();
+    updateCellPreview(currentRowId);
+    }
+
+    function renderModalImages() {
+    const container = document.getElementById('modalImgGrid');
+    container.innerHTML = '';
+    const files = rowData[currentRowId];
+
+    if (files.length === 0) {
+    container.innerHTML = '<div class="text-center text-muted p-4 w-100" style="grid-column: span 4;">Chưa có ảnh nào
+    </div>';
+    return;
+    }
+
+    files.forEach((file, index) => {
+    const url = URL.createObjectURL(file);
+    const div = document.createElement('div');
+    div.className = 'modal-item';
+
+    // Badge ảnh bìa cho cái đầu tiên
+    const badge = index === 0
+    ? '<div class="position-absolute bottom-0 start-0 w-100 bg-warning text-white text-center py-1 small fw-bold"
+        style="font-size:10px;">ẢNH BÌA</div>'
+    : '';
+
+    div.innerHTML = `
+    <img src="${url}">
+    <div class="btn-del-img" onclick="removeImage(${index})">×</div>
+    ${badge}
+    `;
+    container.appendChild(div);
+    });
+    }
+
+    function addFilesToRow(rowId, fileList) {
+    const newFiles = Array.from(fileList);
+    // Cộng dồn vào mảng cũ
+    rowData[rowId] = [...rowData[rowId], ...newFiles];
+
+    renderModalImages();
+    updateCellPreview(rowId);
+    }
+
+    function updateCellPreview(rowId) {
+    const cell = document.getElementById(`imgCell_${rowId}`);
+    const files = rowData[rowId];
+
+    if (files.length > 0) {
+    // Lấy ảnh đầu tiên làm bìa preview
+    const coverUrl = URL.createObjectURL(files[0]);
+    const countText = files.length > 1 ? `+${files.length - 1}` : '';
+
+    cell.innerHTML = `
+    <img src="${coverUrl}">
+    <div class="img-cell-count">${countText}</div>
+    `;
+    cell.style.background = '#000';
+    cell.style.borderColor = '#1877F2';
     } else {
-        // UPDATE
-        $sql = "UPDATE products SET 
-                    title = :title, price = :price, price_rent = :rent, 
-                    type = :type, unit = :unit, thumb = :thumb, 
-                    gallery = :gallery, status = :status, is_order = :is_order, 
-                    private_note = :note 
-                WHERE id = :id";
-        $stmt = $conn->prepare($sql);
-        $stmt->execute([
-            ':title' => $title,
-            ':price' => $price,
-            ':rent' => $priceRent,
-            ':type' => $type,
-            ':unit' => $unit,
-            ':thumb' => $thumb,
-            ':gallery' => $galleryJson,
-            ':status' => $status, // Lưu ý: Nếu form edit không gửi status thì cần check lại logic này ở form edit
-            ':is_order' => $isOrder, // [MỚI]
-            ':note' => $privateNote,
-            ':id' => $id
-        ]);
-        $productId = $id;
-        $msg = "updated";
+    cell.innerHTML = `<i class="ph-bold ph-plus text-secondary fs-4"></i>`;
+    cell.style.background = '#f3f4f6';
+    cell.style.borderColor = '#d1d5db';
+    }
     }
 
-    // =========================================================
-    // 5. LƯU TAG (QUAN TRỌNG)
-    // =========================================================
 
-    // B1: Xóa hết tag cũ của acc này (để cập nhật mới)
-    $conn->prepare("DELETE FROM product_tags WHERE product_id = :pid")->execute([':pid' => $productId]);
+    // ============================================================
+    // 3. CÁC TIỆN ÍCH HỖ TRỢ (UTILS)
+    // ============================================================
 
-    // B2: Thêm các tag mới chọn
-    if (isset($_POST['tags']) && is_array($_POST['tags'])) {
-        $sqlTag = "INSERT INTO product_tags (product_id, tag_id) VALUES (:pid, :tid)";
-        $stmtTag = $conn->prepare($sqlTag);
+    function applyGlobal() {
+    const note = document.getElementById('globalNote').value;
+    const price = document.getElementById('globalPrice').value;
 
-        foreach ($_POST['tags'] as $tagId) {
-            $stmtTag->execute([':pid' => $productId, ':tid' => (int)$tagId]);
-        }
+    if (note) {
+    document.querySelectorAll('input[name^="notes"]').forEach(el => el.value = note);
+    }
+    if (price) {
+    document.querySelectorAll('input[name^="prices"]').forEach(el => {
+    el.value = price;
+    // Gọi hàm format để nó tự thêm dấu chấm nếu cần
+    formatPrice(el);
+    });
     }
 
-    // XONG!
-    header("Location: index.php?msg=$msg");
-    exit;
-} catch (Exception $e) {
-    die("❌ Lỗi hệ thống: " . $e->getMessage());
-}
+    Swal.fire({
+    toast: true, position: 'top-end', icon: 'success',
+    title: 'Đã áp dụng!', showConfirmButton: false, timer: 1000
+    });
+    }
+
+    // Hàm format giá (Public ra window để gọi từ oninput)
+    window.formatPrice = function(input) {
+    let val = input.value;
+    if (!val) return;
+
+    // Xử lý nhập tắt (5m, 100k)
+    let numStr = val.toLowerCase().trim();
+
+    if (numStr.endsWith('k')) {
+    let num = parseFloat(numStr) * 1000;
+    input.value = num.toLocaleString('vi-VN').replace(/,/g, '.');
+    return;
+    }
+
+    if (numStr.endsWith('m') || numStr.endsWith('tr')) {
+    // Xóa chữ cái để lấy số
+    let pureNum = parseFloat(numStr.replace(/[^0-9.]/g, ''));
+    let num = pureNum * 1000000;
+    input.value = num.toLocaleString('vi-VN').replace(/,/g, '.');
+    return;
+    }
+
+    // Format số thường (xóa ký tự lạ, thêm dấu chấm)
+    // Nếu đang gõ k hoặc m thì không can thiệp vội
+    if (/[kmtr]/i.test(val)) return;
+
+    let cleanVal = val.replace(/\D/g, '');
+    if (cleanVal !== '') {
+    input.value = cleanVal.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    }
+    }
+
+
+    // ============================================================
+    // 4. GỬI DỮ LIỆU (AJAX SUBMIT)
+    // ============================================================
+
+    async function submitBulk() {
+    let formData = new FormData();
+    let validCount = 0;
+
+    // Duyệt qua tất cả các dòng dữ liệu
+    for (const [rowId, files] of Object.entries(rowData)) {
+    // Kiểm tra xem dòng này còn trên bảng không (hay đã bị xóa)
+    const rowEl = document.getElementById(`row_${rowId}`);
+    if (!rowEl) continue;
+
+    // Lấy dữ liệu từ input
+    const titleInput = rowEl.querySelector(`input[name="titles[${rowId}]"]`);
+    const priceInput = rowEl.querySelector(`input[name="prices[${rowId}]"]`);
+    const noteInput = rowEl.querySelector(`input[name="notes[${rowId}]"]`);
+
+    const title = titleInput.value.trim();
+    const price = priceInput.value.trim();
+    const note = noteInput.value.trim();
+
+    // Điều kiện để được lưu: Phải có Giá VÀ có ít nhất 1 Ảnh
+    if (price && files.length > 0) {
+    validCount++;
+
+    formData.append('indexes[]', rowId); // Danh sách ID hợp lệ
+    formData.append(`title_${rowId}`, title);
+    formData.append(`price_${rowId}`, price);
+    formData.append(`note_${rowId}`, note);
+
+    // Gửi toàn bộ file ảnh của dòng này
+    files.forEach((file) => {
+    formData.append(`images_${rowId}[]`, file);
+    });
+    }
+    }
+
+    if (validCount === 0) {
+    Swal.fire('Chưa đủ thông tin', 'Vui lòng nhập <b>Giá</b> và chọn <b>Ảnh</b> cho ít nhất 1 acc!', 'warning');
+    return;
+    }
+
+    // Hiển thị loading
+    Swal.fire({
+    title: `Đang đăng ${validCount} Acc...`,
+    html: 'Hệ thống đang upload ảnh và lưu dữ liệu.<br>Vui lòng <b>không tắt trình duyệt</b>!',
+    allowOutsideClick: false,
+    didOpen: () => { Swal.showLoading(); }
+    });
+
+    try {
+    const response = await fetch('api/process_bulk.php', {
+    method: 'POST',
+    body: formData
+    });
+
+    // Parse kết quả
+    // Lưu ý: Đôi khi PHP trả về lỗi kèm HTML, cần lọc
+    const resText = await response.text();
+
+    let result;
+    try {
+    result = JSON.parse(resText);
+    } catch (e) {
+    console.error("Lỗi JSON:", resText);
+    throw new Error("Server trả về dữ liệu lỗi: " + resText.substring(0, 100));
+    }
+
+    if (result.status === 'success') {
+    Swal.fire({
+    icon: 'success',
+    title: 'Thành công!',
+    text: `Đã đăng xong ${result.count} acc!`,
+    confirmButtonText: 'Tuyệt vời'
+    }).then(() => {
+    window.location.reload(); // Reload để làm lô mới
+    });
+    } else {
+    Swal.fire('Có lỗi', result.msg, 'error');
+    }
+
+    } catch (error) {
+    console.error(error);
+    Swal.fire('Lỗi hệ thống', error.message, 'error');
+    }
+    }
