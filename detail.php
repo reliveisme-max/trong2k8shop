@@ -34,7 +34,7 @@ if (!empty($product['thumb'])) {
 }
 
 // --- CẤU HÌNH HEADER ---
-$pageTitle = "Mã số: " . $product['title'] . " | BARABOY SHOP";
+$pageTitle = "Mã số: " . $product['title'] . " | TRỌNG 2K8 SHOP";
 $isDetailPage = true;
 $backUrl = 'index.php'; // Luôn quay về trang chủ
 

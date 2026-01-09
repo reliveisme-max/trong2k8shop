@@ -1,24 +1,11 @@
 <?php
-// admin/add.php - FINAL FIX WIDTHS & REMOVE GLOBAL PRICE
+// admin/add.php - V3: LAYOUT MỚI (ẢNH -> GIÁ -> TÊN)
 require_once 'auth.php';
 require_once '../includes/config.php';
 
-// 1. Cấu hình Prefix
-$prefix = 'MS';
-
-// 2. Tính toán số thứ tự tiếp theo
-$sql = "SELECT title FROM products WHERE title LIKE :p ORDER BY id DESC LIMIT 1";
-$stmt = $conn->prepare($sql);
-$stmt->execute([':p' => $prefix . '%']);
-$lastTitle = $stmt->fetchColumn();
-
-$startNum = 1;
-if ($lastTitle && preg_match('/(\d+)$/', $lastTitle, $matches)) {
-    $startNum = (int)$matches[1] + 1;
-}
-
-// 3. LẤY DANH SÁCH DANH MỤC
-$cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
+// Lấy danh sách danh mục (Sắp xếp theo thứ tự ưu tiên display_order)
+// Lưu ý: Nếu chưa chạy SQL thêm cột display_order thì nó vẫn chạy được (mặc định 0)
+$cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id ASC")->fetchAll();
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -33,7 +20,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
     <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        /* CSS RIÊNG CHO TRANG BULK */
         .bulk-wrapper {
             background: #fff;
             border-radius: 16px;
@@ -41,7 +27,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
         }
 
-        /* CẤU HÌNH BẢNG - KHÔNG NGẮT DÒNG */
         .table-bulk th {
             background: #f9fafb;
             font-size: 12px;
@@ -57,7 +42,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
             border-bottom: 1px solid #f3f4f6;
         }
 
-        /* Ô ẢNH */
         .img-cell-box {
             width: 70px;
             height: 70px;
@@ -85,7 +69,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
             position: absolute;
             top: 0;
             left: 0;
-            filter: brightness(0.5);
+            filter: brightness(0.9);
         }
 
         .img-cell-count {
@@ -97,7 +81,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
 
-        /* MODAL GRID */
+        /* Modal Grid */
         .modal-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -113,7 +97,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
             border-radius: 8px;
             overflow: hidden;
             border: 1px solid #eee;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
         }
 
         .modal-item img {
@@ -139,12 +122,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
             justify-content: center;
             cursor: pointer;
             font-weight: bold;
-            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-del-img:hover {
-            background: #ef4444;
-            color: #fff;
         }
     </style>
 </head>
@@ -164,20 +141,19 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
 
     <main class="main-content">
         <div class="d-flex align-items-center mb-4">
-            <h4 class="m-0 fw-bold text-dark">Đăng Acc Hàng Loạt (Công Nghiệp)</h4>
+            <h4 class="m-0 fw-bold text-dark">Đăng Acc Nhanh (Layout Mới)</h4>
         </div>
 
-        <!-- CÀI ĐẶT CHUNG (Đã bỏ ô Giá chung) -->
+        <!-- CÀI ĐẶT CHUNG -->
         <div class="form-card mb-4 bg-light border-start border-4 border-warning">
-            <h6 class="fw-bold mb-3 text-warning"><i class="ph-fill ph-sliders-horizontal"></i> CÀI ĐẶT CHUNG (Điền
-                nhanh)</h6>
+            <h6 class="fw-bold mb-3 text-warning"><i class="ph-fill ph-sliders-horizontal"></i> ĐIỀN NHANH (ÁP DỤNG HẾT)
+            </h6>
             <div class="row g-3 align-items-end">
                 <div class="col-md-6">
                     <label class="small fw-bold text-secondary">Ghi chú chung</label>
                     <input type="text" id="globalNote" class="form-control custom-input"
-                        placeholder="Ví dụ: Acc trắng thông tin, bao đổi trả...">
+                        placeholder="Ví dụ: Acc trắng thông tin...">
                 </div>
-
                 <div class="col-md-3">
                     <label class="small fw-bold text-secondary">Danh mục chung</label>
                     <select id="globalCategory" class="form-select custom-input">
@@ -187,11 +163,10 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
                         <?php endforeach; ?>
                     </select>
                 </div>
-
                 <div class="col-md-3">
                     <button type="button" id="btnApplyGlobal" class="btn btn-warning text-white fw-bold w-100 shadow-sm"
                         style="height: 46px;">
-                        <i class="ph-bold ph-lightning"></i> ÁP DỤNG TẤT CẢ
+                        <i class="ph-bold ph-lightning"></i> ÁP DỤNG NGAY
                     </button>
                 </div>
             </div>
@@ -205,11 +180,10 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
                         <tr>
                             <th width="40" class="text-center">#</th>
                             <th width="90" class="text-center">ẢNH</th>
-                            <th width="110">MÃ SỐ (Tự sinh)</th>
-                            <!-- Đã chỉnh width theo yêu cầu -->
-                            <th width="300">DANH MỤC</th>
-                            <th width="180">GIÁ BÁN</th>
-                            <th width="250">GHI CHÚ</th>
+                            <th width="150">GIÁ BÁN (VNĐ)</th> <!-- Đã chuyển lên trước -->
+                            <th width="250">TÊN ACC (Tùy chọn)</th>
+                            <th width="200">DANH MỤC</th>
+                            <th width="200">GHI CHÚ</th>
                             <th width="40" class="text-center">X</th>
                         </tr>
                     </thead>
@@ -221,21 +195,21 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
                 <button id="btnAddRows" class="btn btn-light border fw-bold text-secondary">
                     <i class="ph-bold ph-plus"></i> Thêm 5 dòng
                 </button>
-                <button id="btnSubmitBulk" class="btn btn-primary fw-bold ms-auto px-5 shadow">
-                    <i class="ph-bold ph-floppy-disk"></i> LƯU TẤT CẢ ACC
+                <!-- Nút type="button" để chống submit form -->
+                <button type="button" id="btnSubmitBulk" class="btn btn-primary fw-bold ms-auto px-5 shadow">
+                    <i class="ph-bold ph-floppy-disk"></i> LƯU TẤT CẢ
                 </button>
             </div>
         </div>
         <div style="height: 100px;"></div>
     </main>
 
-    <!-- MODAL (GIỮ NGUYÊN) -->
+    <!-- MODAL ẢNH -->
     <div class="modal fade" id="imageModal" tabindex="-1" data-bs-backdrop="static">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content border-0 shadow-lg">
                 <div class="modal-header border-bottom-0 pb-0">
-                    <h5 class="modal-title fw-bold">Quản lý ảnh: <span id="modalRowTitle" class="text-primary"></span>
-                    </h5>
+                    <h5 class="modal-title fw-bold">Quản lý ảnh</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body">
@@ -244,35 +218,28 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
                         <div class="bg-primary bg-opacity-10 p-2 rounded-circle text-primary"><i
                                 class="ph-bold ph-plus fs-4"></i></div>
                         <div>
-                            <div class="fw-bold text-dark">Bấm vào đây để chọn thêm ảnh</div>
-                            <div class="small text-secondary">Kéo thả hoặc chọn nhiều ảnh cùng lúc</div>
+                            <div class="fw-bold text-dark">Thêm ảnh vào đây</div>
+                            <div class="small text-secondary">Chọn nhiều ảnh cùng lúc</div>
                         </div>
                     </div>
                     <input type="file" id="modalFileInput" multiple accept="image/*" hidden>
                     <div class="modal-grid" id="modalImgGrid"></div>
-                    <div class="text-center mt-3 text-secondary small fst-italic">Ảnh đầu tiên sẽ tự động làm Ảnh Bìa
-                    </div>
                 </div>
                 <div class="modal-footer border-top-0">
-                    <button type="button" class="btn btn-primary w-100 fw-bold py-2" data-bs-dismiss="modal">XONG, ĐÓNG
-                        LẠI</button>
+                    <button type="button" class="btn btn-primary w-100 fw-bold py-2"
+                        data-bs-dismiss="modal">XONG</button>
                 </div>
             </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- TRUYỀN DỮ LIỆU SANG JS -->
     <script>
+        // Truyền danh sách danh mục sang JS
         const BULK_CONFIG = {
-            startNum: <?= $startNum ?>,
-            prefix: "<?= $prefix ?>",
             categories: <?= json_encode($cats) ?>
         };
     </script>
-
-    <!-- FILE JS LOGIC -->
     <script src="assets/js/pages/bulk-upload.js?v=<?= time() ?>"></script>
 </body>
 

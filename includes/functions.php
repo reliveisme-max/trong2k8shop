@@ -74,9 +74,10 @@ function formatPrice($price)
 {
     if ($price <= 0) return "Liên hệ";
 
+    // Xử lý hàng Triệu (m)
     if ($price >= 1000000) {
         $val = $price / 1000000;
-        // Nếu tròn (vd: 1.0) thì bỏ số 0, nếu lẻ (1.5) thì giữ
+        // Chuyển sang chuỗi, nếu tròn (10.0) thì bỏ .0 thành 10
         $str = (string)$val;
         if (strpos($str, '.') !== false) {
             $str = rtrim(rtrim($str, '0'), '.');
@@ -84,6 +85,7 @@ function formatPrice($price)
         return str_replace('.', ',', $str) . 'm';
     }
 
+    // Xử lý hàng Nghìn (k)
     if ($price >= 1000) {
         $val = $price / 1000;
         $str = (string)$val;
@@ -93,7 +95,8 @@ function formatPrice($price)
         return str_replace('.', ',', $str) . 'k';
     }
 
-    return number_format($price, 0, ',', '.') . ' đ';
+    // Số nhỏ quá thì để nguyên đ
+    return number_format($price, 0, ',', '.') . 'đ';
 }
 
 // 4. CHECK ACTIVE BỘ LỌC (Dùng cho index.php)
