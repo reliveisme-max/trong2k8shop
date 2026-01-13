@@ -16,12 +16,6 @@
 <!-- JS CHÍNH CỦA WEBSITE -->
 <script src="assets/js/home.js?v=<?= time() ?>"></script>
 
-<!-- [QUAN TRỌNG] GỌI MENU MOBILE & MODAL VÀO ĐÂY -->
-<?php
-// Nhúng file giao diện mobile nằm cùng thư mục includes
-include __DIR__ . '/mobile-nav.php';
-?>
-
 </body>
 
 </html>
