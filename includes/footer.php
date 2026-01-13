@@ -14,7 +14,7 @@
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 
 <!-- JS CHÍNH CỦA WEBSITE -->
-<script src="assets/js/main.js?v=<?= time() ?>"></script>
+<script src="assets/js/home.js?v=<?= time() ?>"></script>
 
 <!-- [QUAN TRỌNG] GỌI MENU MOBILE & MODAL VÀO ĐÂY -->
 <?php

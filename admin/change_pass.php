@@ -27,15 +27,20 @@ require_once '../includes/config.php';
 
     <!-- SIDEBAR (DESKTOP) -->
     <aside class="sidebar">
-        <div class="brand"><i class="ph-fill ph-hexagon"></i> ADMIN PANEL</div>
+        <!-- LOGO MỚI -->
+        <div class="brand"><i class="ph-fill ph-crown"></i> ADMIN PANEL</div>
+
         <nav class="d-flex flex-column gap-2">
-            <a href="index.php" class="menu-item"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
-            <a href="add.php" class="menu-item"><i class="ph-duotone ph-plus-circle"></i> Đăng Acc Mới</a>
-            <a href="library.php" class="menu-item"><i class="ph-duotone ph-image"></i> Thư viện ảnh</a>
-            <a href="change_pass.php" class="menu-item active"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
+            <a href="index.php" class="menu-item"><i class="ph-bold ph-squares-four"></i> Tổng Quan</a>
+
+            <!-- MENU MỚI -->
+            <a href="add.php" class="menu-item"><i class="ph-bold ph-plus-circle"></i> Đăng Acc Mới</a>
+
+            <a href="categories.php" class="menu-item"><i class="ph-bold ph-list-dashes"></i> Danh Mục Game</a>
+            <a href="change_pass.php" class="menu-item"><i class="ph-bold ph-lock-key"></i> Đổi mật khẩu</a>
+
             <div class="mt-auto">
-                <div class="border-top border-secondary opacity-25 mb-3"></div>
-                <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-duotone ph-sign-out"></i> Đăng
+                <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-bold ph-sign-out"></i> Đăng
                     xuất</a>
             </div>
         </nav>
@@ -129,38 +134,38 @@ require_once '../includes/config.php';
     <!-- SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    // Hiển thị SweetAlert từ URL
-    document.addEventListener('DOMContentLoaded', function() {
-        const urlParams = new URLSearchParams(window.location.search);
-        const status = urlParams.get('status');
-        const msg = urlParams.get('msg');
+        // Hiển thị SweetAlert từ URL
+        document.addEventListener('DOMContentLoaded', function() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const status = urlParams.get('status');
+            const msg = urlParams.get('msg');
 
-        // Cấu hình Toast sáng màu
-        const toastConfig = {
-            confirmButtonColor: '#f59e0b',
-            background: '#fff',
-            color: '#000'
-        };
+            // Cấu hình Toast sáng màu
+            const toastConfig = {
+                confirmButtonColor: '#f59e0b',
+                background: '#fff',
+                color: '#000'
+            };
 
-        if (status === 'success') {
-            Swal.fire({
-                ...toastConfig,
-                icon: 'success',
-                title: 'Thành công!',
-                text: 'Mật khẩu đã được thay đổi.'
-            });
-            window.history.replaceState({}, document.title, "change_pass.php");
-        } else if (status === 'error') {
-            Swal.fire({
-                ...toastConfig,
-                icon: 'error',
-                title: 'Lỗi!',
-                text: decodeURIComponent(msg.replace(/\+/g, ' ')),
-                confirmButtonColor: '#ef4444'
-            });
-            window.history.replaceState({}, document.title, "change_pass.php");
-        }
-    });
+            if (status === 'success') {
+                Swal.fire({
+                    ...toastConfig,
+                    icon: 'success',
+                    title: 'Thành công!',
+                    text: 'Mật khẩu đã được thay đổi.'
+                });
+                window.history.replaceState({}, document.title, "change_pass.php");
+            } else if (status === 'error') {
+                Swal.fire({
+                    ...toastConfig,
+                    icon: 'error',
+                    title: 'Lỗi!',
+                    text: decodeURIComponent(msg.replace(/\+/g, ' ')),
+                    confirmButtonColor: '#ef4444'
+                });
+                window.history.replaceState({}, document.title, "change_pass.php");
+            }
+        });
     </script>
 </body>
 

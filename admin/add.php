@@ -1,11 +1,16 @@
 <?php
-// admin/add.php - V3: LAYOUT MỚI (ẢNH -> GIÁ -> TÊN)
+// admin/add.php - V6: FIX SIDEBAR TEXT & ICONS
 require_once 'auth.php';
 require_once '../includes/config.php';
 
-// Lấy danh sách danh mục (Sắp xếp theo thứ tự ưu tiên display_order)
-// Lưu ý: Nếu chưa chạy SQL thêm cột display_order thì nó vẫn chạy được (mặc định 0)
+// 1. Lấy danh sách danh mục (Sắp xếp)
 $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id ASC")->fetchAll();
+
+// 2. Logic Auto ID
+$conn->query("ALTER TABLE products AUTO_INCREMENT = 1");
+$stmt = $conn->query("SELECT MAX(id) FROM products");
+$maxId = $stmt->fetchColumn();
+$nextId = $maxId ? ($maxId + 1) : 1;
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -13,39 +18,42 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Đăng Acc Hàng Loạt</title>
+    <title>Đăng Acc Mới</title>
+
+    <!-- FONT & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
     <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
+        /* CSS Riêng cho trang Bulk (Giữ nguyên) */
         .bulk-wrapper {
             background: #fff;
             border-radius: 16px;
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+            border: none;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.03);
+            padding: 20px;
         }
 
         .table-bulk th {
-            background: #f9fafb;
+            background: #f8faff;
             font-size: 12px;
             text-transform: uppercase;
             padding: 12px;
-            border-bottom: 2px solid #eee;
-            white-space: nowrap;
+            border-bottom: none;
         }
 
         .table-bulk td {
             vertical-align: middle;
             padding: 8px;
-            border-bottom: 1px solid #f3f4f6;
+            border-bottom: 1px solid #f0f3f7;
         }
 
         .img-cell-box {
             width: 70px;
             height: 70px;
-            background: #f3f4f6;
+            background: #f8faff;
             border: 2px dashed #d1d5db;
             border-radius: 8px;
             cursor: pointer;
@@ -58,8 +66,8 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
         }
 
         .img-cell-box:hover {
-            border-color: #1877F2;
-            background: #eff6ff;
+            border-color: #435ebe;
+            background: #eef2ff;
         }
 
         .img-cell-box img {
@@ -69,7 +77,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
             position: absolute;
             top: 0;
             left: 0;
-            filter: brightness(0.9);
         }
 
         .img-cell-count {
@@ -81,7 +88,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
             text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
         }
 
-        /* Modal Grid */
         .modal-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
@@ -127,26 +133,35 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
 </head>
 
 <body>
+    <!-- SIDEBAR (ĐÃ CHỈNH SỬA ĐỒNG BỘ) -->
     <aside class="sidebar">
+        <!-- Logo -->
         <div class="brand"><i class="ph-fill ph-crown"></i> ADMIN PANEL</div>
+
         <nav class="d-flex flex-column gap-2">
-            <a href="index.php" class="menu-item"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
-            <a href="add.php" class="menu-item active"><i class="ph-duotone ph-stack"></i> Đăng Acc (Bulk)</a>
-            <a href="categories.php" class="menu-item"><i class="ph-duotone ph-list-dashes"></i> Danh Mục</a>
-            <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
-            <div class="mt-auto"><a href="logout.php" class="menu-item text-danger fw-bold"><i
-                        class="ph-duotone ph-sign-out"></i> Đăng xuất</a></div>
+            <a href="index.php" class="menu-item"><i class="ph-bold ph-squares-four"></i> Tổng Quan</a>
+
+            <!-- Đổi text & Icon ở đây -->
+            <a href="add.php" class="menu-item active"><i class="ph-bold ph-plus-circle"></i> Đăng Acc Mới</a>
+
+            <a href="categories.php" class="menu-item"><i class="ph-bold ph-list-dashes"></i> Danh Mục Game</a>
+            <a href="change_pass.php" class="menu-item"><i class="ph-bold ph-lock-key"></i> Đổi mật khẩu</a>
+
+            <div class="mt-auto">
+                <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-bold ph-sign-out"></i> Đăng
+                    xuất</a>
+            </div>
         </nav>
     </aside>
 
     <main class="main-content">
         <div class="d-flex align-items-center mb-4">
-            <h4 class="m-0 fw-bold text-dark">Đăng Acc Nhanh (Layout Mới)</h4>
+            <h4 class="m-0 fw-bold text-dark">Đăng Acc Nhanh</h4>
         </div>
 
         <!-- CÀI ĐẶT CHUNG -->
-        <div class="form-card mb-4 bg-light border-start border-4 border-warning">
-            <h6 class="fw-bold mb-3 text-warning"><i class="ph-fill ph-sliders-horizontal"></i> ĐIỀN NHANH (ÁP DỤNG HẾT)
+        <div class="form-card mb-4 border-start border-4 border-primary">
+            <h6 class="fw-bold mb-3 text-primary"><i class="ph-fill ph-sliders-horizontal"></i> ĐIỀN NHANH (ÁP DỤNG HẾT)
             </h6>
             <div class="row g-3 align-items-end">
                 <div class="col-md-6">
@@ -164,8 +179,8 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
                     </select>
                 </div>
                 <div class="col-md-3">
-                    <button type="button" id="btnApplyGlobal" class="btn btn-warning text-white fw-bold w-100 shadow-sm"
-                        style="height: 46px;">
+                    <button type="button" id="btnApplyGlobal" class="btn btn-primary w-100 shadow-sm"
+                        style="height: 44px;">
                         <i class="ph-bold ph-lightning"></i> ÁP DỤNG NGAY
                     </button>
                 </div>
@@ -178,9 +193,9 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
                 <table class="table table-bordered table-bulk mb-0" id="bulkTable">
                     <thead>
                         <tr>
-                            <th width="40" class="text-center">#</th>
+                            <th width="60" class="text-center">ID</th>
                             <th width="90" class="text-center">ẢNH</th>
-                            <th width="150">GIÁ BÁN (VNĐ)</th> <!-- Đã chuyển lên trước -->
+                            <th width="150">GIÁ BÁN (VNĐ)</th>
                             <th width="250">TÊN ACC (Tùy chọn)</th>
                             <th width="200">DANH MỤC</th>
                             <th width="200">GHI CHÚ</th>
@@ -195,7 +210,6 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
                 <button id="btnAddRows" class="btn btn-light border fw-bold text-secondary">
                     <i class="ph-bold ph-plus"></i> Thêm 5 dòng
                 </button>
-                <!-- Nút type="button" để chống submit form -->
                 <button type="button" id="btnSubmitBulk" class="btn btn-primary fw-bold ms-auto px-5 shadow">
                     <i class="ph-bold ph-floppy-disk"></i> LƯU TẤT CẢ
                 </button>
@@ -235,9 +249,9 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Truyền danh sách danh mục sang JS
         const BULK_CONFIG = {
-            categories: <?= json_encode($cats) ?>
+            categories: <?= json_encode($cats) ?>,
+            startId: <?= $nextId ?>
         };
     </script>
     <script src="assets/js/pages/bulk-upload.js?v=<?= time() ?>"></script>

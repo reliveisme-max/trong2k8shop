@@ -1,5 +1,5 @@
 <?php
-// admin/index.php - UPDATE: SHOW CATEGORIES & FILTER
+// admin/index.php - V8: REORDER COLUMNS
 require_once 'auth.php';
 require_once '../includes/config.php';
 require_once '../includes/functions.php';
@@ -37,7 +37,7 @@ if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
 
 // --- 2. LẤY DỮ LIỆU & LỌC ---
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
-$catId    = isset($_GET['cat']) ? (int)$_GET['cat'] : 0; // Lọc theo danh mục
+$catId    = isset($_GET['cat']) ? (int)$_GET['cat'] : 0;
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
 $limit    = 10;
@@ -46,14 +46,11 @@ $offset   = ($page - 1) * $limit;
 $whereArr = [];
 $params = [];
 
-// Tìm kiếm
 if ($keyword) {
     $whereArr[] = "(p.title LIKE :kw OR p.id = :id)";
     $params[':kw'] = "%$keyword%";
     $params[':id'] = (int)$keyword;
 }
-
-// Lọc Danh Mục
 if ($catId > 0) {
     $whereArr[] = "p.category_id = :cat";
     $params[':cat'] = $catId;
@@ -61,14 +58,12 @@ if ($catId > 0) {
 
 $whereSql = !empty($whereArr) ? "WHERE " . implode(" AND ", $whereArr) : "";
 
-// Đếm tổng
 $sqlCount = "SELECT COUNT(*) FROM products p $whereSql";
 $stmtCount = $conn->prepare($sqlCount);
 $stmtCount->execute($params);
 $totalRecords = $stmtCount->fetchColumn();
 $totalPages = ceil($totalRecords / $limit);
 
-// [QUERY] JOIN VỚI BẢNG CATEGORIES ĐỂ LẤY TÊN
 $sql = "SELECT p.*, c.name as cat_name
         FROM products p 
         LEFT JOIN categories c ON p.category_id = c.id 
@@ -81,13 +76,13 @@ foreach ($params as $key => $val) $stmt->bindValue($key, $val);
 $stmt->execute();
 $products = $stmt->fetchAll();
 
-// Lấy danh sách danh mục để hiện vào Select box
 $cats = $conn->query("SELECT * FROM categories ORDER BY id ASC")->fetchAll();
 
-// Thống kê nhanh
+// --- THỐNG KÊ NHANH ---
 $totalAcc = $conn->query("SELECT COUNT(*) FROM products")->fetchColumn();
+$totalSelling = $conn->query("SELECT COUNT(*) FROM products WHERE status = 1")->fetchColumn();
+$totalSold = $conn->query("SELECT COUNT(*) FROM products WHERE status = 0")->fetchColumn();
 
-// Xử lý AJAX
 if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
     renderTableBody($products);
     echo "<!--DIVIDER-->";
@@ -98,44 +93,59 @@ if (isset($_GET['ajax']) && $_GET['ajax'] == 1) {
 function renderTableBody($products)
 {
     if (empty($products)) {
-        echo '<tr><td colspan="7" class="text-center py-5 text-secondary">Không tìm thấy dữ liệu</td></tr>';
+        echo '<tr><td colspan="8" class="text-center py-5 text-secondary">Không tìm thấy dữ liệu</td></tr>';
         return;
     }
     foreach ($products as $p) {
         $thumb = !empty($p['thumb']) ? "../uploads/" . $p['thumb'] : "../assets/images/no-image.jpg";
         $catName = $p['cat_name'] ? $p['cat_name'] : '<span class="text-muted fst-italic">Chưa phân loại</span>';
+        $isChecked = ($p['status'] == 1) ? 'checked' : '';
 ?>
         <tr>
+            <!-- 1. CHECKBOX -->
             <td class="ps-4"><input type="checkbox" name="selected_ids[]" value="<?= $p['id'] ?>"
                     class="form-check-input item-check" onclick="updateDeleteBtn()"></td>
+
+            <!-- 2. ẢNH -->
             <td>
                 <img src="<?= $thumb ?>" class="thumb-img" loading="lazy">
             </td>
-            <td>
-                <div class="fw-bold text-dark text-break">#<?= $p['id'] ?> - <?= $p['title'] ?></div>
 
-                <?php if (!empty($p['private_note'])): ?>
-                    <div class="mt-1 text-secondary fst-italic note-badge"
-                        style="font-size: 11px; background: #fffbeb; padding: 2px 6px; border-radius: 4px; border: 1px dashed #fcd34d; display: inline-block;">
-                        <i class="ph-fill ph-note-pencil text-warning"></i> <?= htmlspecialchars($p['private_note']) ?>
-                    </div>
-                <?php endif; ?>
+            <!-- 3. THÔNG TIN ACC -->
+            <td>
+                <div class="fw-bold text-dark text-break">#<?= $p['id'] ?> - <?= htmlspecialchars($p['title']) ?></div>
             </td>
-            <!-- CỘT DANH MỤC MỚI -->
+
+            <!-- 4. GIÁ TIỀN -->
+            <td>
+                <div class="fw-bold" style="color: var(--primary); font-size: 15px;"><?= formatPrice($p['price']) ?></div>
+            </td>
+
+            <!-- 5. DANH MỤC -->
             <td>
                 <span class="badge bg-light text-dark border"><?= $catName ?></span>
             </td>
+
+            <!-- 6. GHI CHÚ -->
             <td>
-                <div class="fw-bold text-danger" style="font-size: 15px;"><?= formatPrice($p['price']) ?></div>
+                <span class="text-secondary small fst-italic"><?= htmlspecialchars($p['private_note']) ?></span>
             </td>
-            <td><?= $p['status'] == 1 ? '<span class="badge-soft badge-status-active">Đang bán</span>' : '<span class="badge-soft badge-status-sold">Đã bán</span>' ?>
+
+            <!-- 7. TRẠNG THÁI -->
+            <td>
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" style="width: 40px; height: 20px; cursor: pointer;"
+                        onchange="toggleStatus(this, <?= $p['id'] ?>)" <?= $isChecked ?>>
+                </div>
             </td>
+
+            <!-- 8. THAO TÁC -->
             <td class="text-end pe-4">
-                <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank" class="btn-action btn-action-view me-1"><i
+                <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank" class="btn btn-light border btn-sm"><i
                         class="ph-bold ph-eye"></i></a>
-                <a href="edit.php?id=<?= $p['id'] ?>" class="btn-action btn-action-edit me-1"><i
+                <a href="edit.php?id=<?= $p['id'] ?>" class="btn btn-light border btn-sm text-primary"><i
                         class="ph-bold ph-pencil-simple"></i></a>
-                <a href="delete.php?id=<?= $p['id'] ?>" class="btn-action btn-action-delete"
+                <a href="delete.php?id=<?= $p['id'] ?>" class="btn btn-light border btn-sm text-danger"
                     onclick="return confirmDelete(event, this.href)"><i class="ph-bold ph-trash"></i></a>
             </td>
         </tr>
@@ -178,192 +188,190 @@ function renderPagination($page, $totalPages)
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Quản lý Shop</title>
+    <!-- FONT & CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet">
-    <link rel="stylesheet" href="assets/css/dashboard.css?v=<?= time() ?>">
     <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 
 <body>
+    <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="brand"><i class="ph-fill ph-crown"></i> ADMIN PANEL</div>
         <nav class="d-flex flex-column gap-2">
-            <a href="index.php" class="menu-item active"><i class="ph-duotone ph-squares-four"></i> Tổng Quan</a>
-            <a href="add.php" class="menu-item"><i class="ph-duotone ph-stack"></i> Đăng Acc (Bulk)</a>
-            <a href="categories.php" class="menu-item"><i class="ph-duotone ph-list-dashes"></i> Danh Mục</a>
-            <a href="change_pass.php" class="menu-item"><i class="ph-duotone ph-lock-key"></i> Đổi mật khẩu</a>
+            <a href="index.php" class="menu-item active"><i class="ph-bold ph-squares-four"></i> Tổng Quan</a>
+            <a href="add.php" class="menu-item"><i class="ph-bold ph-plus-circle"></i> Đăng Acc Mới</a>
+            <a href="categories.php" class="menu-item"><i class="ph-bold ph-list-dashes"></i> Danh Mục Game</a>
+            <a href="change_pass.php" class="menu-item"><i class="ph-bold ph-lock-key"></i> Đổi mật khẩu</a>
             <div class="mt-auto"><a href="logout.php" class="menu-item text-danger fw-bold"><i
-                        class="ph-duotone ph-sign-out"></i> Đăng xuất</a></div>
+                        class="ph-bold ph-sign-out"></i> Đăng xuất</a></div>
         </nav>
     </aside>
 
+    <!-- MAIN CONTENT -->
     <main class="main-content">
-        <div class="content-container">
-            <div class="top-header">
-                <h4 class="m-0 text-dark">Quản lý sản phẩm</h4>
+        <!-- HEADER -->
+        <div class="mb-4 d-flex justify-content-between align-items-end">
+            <div>
+                <h4 class="text-dark m-0">Tổng quan hệ thống</h4>
+                <span class="text-secondary" style="font-size: 14px;">Hôm nay: <?= date('d/m/Y') ?></span>
             </div>
+        </div>
 
-            <div class="row g-4 mb-4">
-                <div class="col-12">
-                    <div class="stat-card total">
-                        <div class="stat-info">
-                            <div class="stat-label">Tổng Acc</div>
-                            <div class="stat-value"><?= number_format($totalAcc) ?></div>
-                        </div>
-                        <div class="stat-icon"><i class="ph-duotone ph-shopping-cart"></i></div>
+        <!-- STATS CARDS -->
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="ph-fill ph-game-controller"></i></div>
+                    <div class="stat-info text-end">
+                        <div class="stat-label">Tổng Acc</div>
+                        <div class="stat-value"><?= number_format($totalAcc) ?></div>
                     </div>
                 </div>
             </div>
-
-            <div class="admin-toolbar">
-                <div class="d-flex flex-wrap align-items-center gap-3 w-100">
-                    <!-- BỘ LỌC DANH MỤC MỚI -->
-                    <div style="min-width: 200px;">
-                        <select id="catFilter" class="form-select custom-input" onchange="applyFilter()">
-                            <option value="0">-- Tất cả danh mục --</option>
-                            <?php foreach ($cats as $c): ?>
-                                <option value="<?= $c['id'] ?>" <?= $catId == $c['id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($c['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon text-success bg-success bg-opacity-10"><i class="ph-fill ph-check-circle"></i>
                     </div>
+                    <div class="stat-info text-end">
+                        <div class="stat-label">Đang bán</div>
+                        <div class="stat-value text-success"><?= number_format($totalSelling) ?></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card">
+                    <div class="stat-icon text-secondary bg-secondary bg-opacity-10"><i class="ph-fill ph-bag"></i>
+                    </div>
+                    <div class="stat-info text-end">
+                        <div class="stat-label">Đã bán</div>
+                        <div class="stat-value text-secondary"><?= number_format($totalSold) ?></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                    <div class="search-group flex-grow-1">
-                        <i class="ph-bold ph-magnifying-glass"></i>
-                        <input type="text" id="searchInput" placeholder="Tìm tên acc, mã số..."
-                            value="<?= htmlspecialchars($keyword) ?>"
+        <!-- TOOLBAR & FILTER -->
+        <div class="form-card mb-4 py-3">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-3">
+                    <select id="catFilter" class="form-select border-0 bg-light" onchange="applyFilter()">
+                        <option value="0">-- Tất cả danh mục --</option>
+                        <?php foreach ($cats as $c): ?>
+                            <option value="<?= $c['id'] ?>" <?= $catId == $c['id'] ? 'selected' : '' ?>>
+                                <?= htmlspecialchars($c['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <div class="position-relative">
+                        <input type="text" id="searchInput" class="form-control border-0 bg-light ps-5"
+                            placeholder="Tìm kiếm tên acc, mã số..." value="<?= htmlspecialchars($keyword) ?>"
                             onkeypress="if(event.key === 'Enter') applyFilter();">
+                        <i
+                            class="ph-bold ph-magnifying-glass position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
                     </div>
-                    <div class="d-flex align-items-center gap-2">
-                        <button type="button" onclick="submitDelete()" id="btnDeleteMulti"
-                            class="btn btn-danger btn-sm rounded-pill fw-bold px-3" style="display:none;"><i
-                                class="ph-bold ph-trash"></i> Xóa (<span id="countSelect">0</span>)</button>
-                        <a href="add.php"
-                            class="btn btn-warning btn-sm rounded-pill fw-bold px-3 py-2 d-flex align-items-center gap-2"><i
-                                class="ph-bold ph-plus"></i> Đăng Acc</a>
-                    </div>
+                </div>
+                <div class="col-md-4 text-end">
+                    <button type="button" onclick="openBulkEdit()" id="btnEditMulti"
+                        class="btn btn-warning text-white rounded-pill fw-bold px-3 me-2" style="display:none;">
+                        <i class="ph-bold ph-pencil-simple"></i> Sửa (<span id="countSelect">0</span>)
+                    </button>
+                    <button type="button" onclick="submitDelete()" id="btnDeleteMulti"
+                        class="btn btn-danger rounded-pill fw-bold px-3 me-2" style="display:none;">
+                        <i class="ph-bold ph-trash"></i> Xóa
+                    </button>
+                    <a href="add.php" class="btn btn-primary rounded-pill px-4 shadow-sm"><i
+                            class="ph-bold ph-plus me-1"></i> Đăng Acc</a>
                 </div>
             </div>
+        </div>
 
-            <form id="formMultiDelete" method="POST" action=""><input type="hidden" name="btn_delete_multi" value="1">
-                <div class="card-table desktop-table position-relative">
-                    <div id="ajaxLoading" class="ajax-loading-overlay d-none">
-                        <div class="spinner-border text-warning" role="status"></div>
-                    </div>
-                    <div class="table-responsive">
-                        <table class="table align-middle table-hover">
-                            <thead>
-                                <tr>
-                                    <th class="ps-4" width="40"><input type="checkbox" class="form-check-input"
-                                            onclick="toggleAll(this)"></th>
-                                    <th width="80">Ảnh</th>
-                                    <th>Thông tin Acc</th>
-                                    <th>Danh mục</th> <!-- Cột mới -->
-                                    <th>Giá tiền</th>
-                                    <th>Trạng thái</th>
-                                    <th class="text-end pe-4">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody id="tableBody"><?php renderTableBody($products); ?></tbody>
-                        </table>
-                    </div>
+        <!-- DATA TABLE -->
+        <form id="formMultiDelete" method="POST" action=""><input type="hidden" name="btn_delete_multi" value="1">
+            <div class="card-table desktop-table position-relative">
+                <div id="ajaxLoading" class="ajax-loading-overlay d-none">
+                    <div class="spinner-border text-primary" role="status"></div>
                 </div>
-            </form>
-            <div id="paginationContainer" class="d-flex justify-content-center py-4">
-                <?php renderPagination($page, $totalPages); ?></div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4" width="40"><input type="checkbox" class="form-check-input"
+                                        onclick="toggleAll(this)"></th>
+                                <th width="70">Ảnh</th>
+                                <th>Thông tin Acc</th>
+                                <th>Giá tiền</th>
+                                <th>Danh mục</th>
+                                <th>Ghi chú</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end pe-4">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody"><?php renderTableBody($products); ?></tbody>
+                    </table>
+                </div>
+            </div>
+        </form>
+
+        <!-- PAGINATION -->
+        <div id="paginationContainer" class="d-flex justify-content-center py-4">
+            <?php renderPagination($page, $totalPages); ?>
         </div>
     </main>
 
-    <div class="bottom-nav"><a href="index.php" class="nav-item active"><i class="ph-duotone ph-squares-four"></i></a><a
-            href="add.php" class="nav-item">
-            <div class="nav-item-add"><i class="ph-bold ph-plus"></i></div>
-        </a><a href="#" class="nav-item disabled"><i class="ph-duotone ph-image" style="opacity:0.3"></i></a></div>
+    <!-- MODAL SỬA NHIỀU -->
+    <div class="modal fade" id="bulkEditModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold">Sửa hàng loạt</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-secondary small mb-3">Đang chọn: <b id="lblBulkCount" class="text-primary">0</b> Acc
+                    </p>
+                    <div class="mb-3">
+                        <label class="fw-bold mb-1">Bạn muốn thay đổi gì?</label>
+                        <select id="bulkAction" class="form-select custom-input" onchange="toggleBulkInput()">
+                            <option value="status">Đổi Trạng Thái</option>
+                            <option value="category">Đổi Danh Mục</option>
+                            <option value="price">Đổi Giá Tiền</option>
+                        </select>
+                    </div>
+                    <div id="boxStatus" class="bulk-input-box">
+                        <select id="valStatus" class="form-select custom-input">
+                            <option value="1">Đang Bán (Hiện)</option>
+                            <option value="0">Đã Bán (Ẩn/Mờ)</option>
+                        </select>
+                    </div>
+                    <div id="boxCategory" class="bulk-input-box d-none">
+                        <select id="valCategory" class="form-select custom-input">
+                            <option value="0">-- Bỏ phân loại --</option>
+                            <?php foreach ($cats as $c): ?>
+                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div id="boxPrice" class="bulk-input-box d-none">
+                        <input type="text" id="valPrice" class="form-control custom-input"
+                            placeholder="Nhập giá mới (VD: 500k)..." onblur="parsePriceShortcut(this)">
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary fw-bold px-4" onclick="submitBulkEdit()">LƯU THAY
+                        ĐỔI</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- JS Cập nhật cho bộ lọc danh mục -->
-    <script>
-        // ... (SweetAlert logic cũ) ...
-
-        function loadPage(page) {
-            const keyword = document.getElementById('searchInput').value;
-            const catId = document.getElementById('catFilter').value;
-            fetchData(page, keyword, catId);
-        }
-
-        function applyFilter() {
-            const keyword = document.getElementById('searchInput').value;
-            const catId = document.getElementById('catFilter').value;
-            fetchData(1, keyword, catId);
-        }
-
-        function fetchData(page, keyword, catId) {
-            const loading = document.getElementById('ajaxLoading');
-            if (loading) loading.classList.remove('d-none');
-
-            const url = `index.php?page=${page}&q=${encodeURIComponent(keyword)}&cat=${catId}&ajax=1`;
-
-            fetch(url)
-                .then(response => response.text())
-                .then(data => {
-                    const parts = data.split('<!--DIVIDER-->');
-                    if (parts.length >= 2) {
-                        document.getElementById('tableBody').innerHTML = parts[0];
-                        document.getElementById('paginationContainer').innerHTML = parts[1];
-                    }
-                    if (loading) loading.classList.add('d-none');
-
-                    const newUrl = `index.php?page=${page}&q=${encodeURIComponent(keyword)}&cat=${catId}`;
-                    window.history.pushState({
-                        path: newUrl
-                    }, '', newUrl);
-
-                    updateDeleteBtn();
-                });
-        }
-
-        // ... (Các hàm Checkbox cũ giữ nguyên) ...
-        function toggleAll(source) {
-            document.querySelectorAll('.item-check').forEach(c => c.checked = source.checked);
-            updateDeleteBtn();
-        }
-
-        function updateDeleteBtn() {
-            const count = document.querySelectorAll('.item-check:checked').length;
-            const btn = document.getElementById('btnDeleteMulti');
-            const countSpan = document.getElementById('countSelect');
-            if (countSpan) countSpan.innerText = count;
-            if (btn) btn.style.display = count > 0 ? 'inline-block' : 'none';
-        }
-
-        function submitDelete() {
-            Swal.fire({
-                title: 'Xác nhận xóa?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Xóa ngay'
-            }).then((result) => {
-                if (result.isConfirmed) document.getElementById('formMultiDelete').submit();
-            })
-        }
-
-        function confirmDelete(e, url) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Xóa Acc này?',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#ef4444',
-                confirmButtonText: 'Xóa'
-            }).then((res) => {
-                if (res.isConfirmed) window.location.href = url;
-            });
-        }
-    </script>
+    <script src="assets/js/admin-utils.js?v=<?= time() ?>"></script>
+    <script src="assets/js/pages/product-list.js?v=<?= time() ?>"></script>
 </body>
 
 </html>

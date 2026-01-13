@@ -1,10 +1,10 @@
 <?php
-// admin/api/process_bulk.php - V5: FIX GIÁ 20M + SHOW LỖI CHI TIẾT
+// admin/api/process_bulk.php - V6: AUTO TITLE = ID IF EMPTY
 
 require_once '../auth.php';
 require_once '../../includes/config.php';
 
-// Tắt hiển thị lỗi ra màn hình (tránh làm hỏng JSON)
+// Tắt hiển thị lỗi ra màn hình (tránh làm hỏng JSON trả về cho JS)
 ini_set('display_errors', 0);
 error_reporting(E_ALL);
 header('Content-Type: application/json');
@@ -23,6 +23,7 @@ try {
     $successCount = 0;
     $targetDir = "../../uploads/";
 
+    // 1. Chuẩn bị câu lệnh INSERT
     $sql = "INSERT INTO products (
                 title, category_id, price, thumb, gallery, 
                 status, created_at, views, user_id, private_note
@@ -32,19 +33,20 @@ try {
             )";
     $stmt = $conn->prepare($sql);
 
+    // 2. Chuẩn bị câu lệnh UPDATE (Dùng để sửa Tên = ID nếu bị bỏ trống)
+    $sqlUpdate = $conn->prepare("UPDATE products SET title = :newTitle WHERE id = :id");
+
     foreach ($_POST['indexes'] as $rowId) {
-        $title = trim($_POST["title_$rowId"] ?? '');
+        $titleRaw = trim($_POST["title_$rowId"] ?? '');
         $note = trim($_POST["note_$rowId"] ?? '');
         $catId = (int)($_POST["cat_$rowId"] ?? 0);
         $priceRaw = strtolower(trim($_POST["price_$rowId"] ?? '0'));
 
-        // --- XỬ LÝ GIÁ THÔNG MINH (20m -> 20000000) ---
+        // --- XỬ LÝ GIÁ THÔNG MINH ---
         $price = 0;
-        // Loại bỏ dấu chấm, phẩy thừa
         $cleanVal = str_replace([',', '.'], '', $priceRaw);
 
         if (strpos($priceRaw, 'm') !== false || strpos($priceRaw, 'tr') !== false) {
-            // Lấy số trước chữ m/tr
             $val = (float)preg_replace('/[^0-9.]/', '', $priceRaw);
             $price = $val * 1000000;
         } elseif (strpos($priceRaw, 'k') !== false) {
@@ -58,13 +60,13 @@ try {
 
         // --- XỬ LÝ ẢNH ---
         $finalImages = [];
-        // Ưu tiên ảnh JS đã upload
+        // Ưu tiên ảnh JS đã upload (Chunk upload)
         if (isset($_POST["uploaded_images_$rowId"])) {
             $rawList = $_POST["uploaded_images_$rowId"];
             $finalImages = is_array($rawList) ? $rawList : json_decode($rawList, true);
         }
 
-        // Dự phòng upload thường
+        // Dự phòng upload thường (Input file truyền thống)
         $fileKey = "images_$rowId";
         if (empty($finalImages) && isset($_FILES[$fileKey])) {
             $files = $_FILES[$fileKey];
@@ -86,8 +88,9 @@ try {
         $thumb = $finalImages[0];
         $galleryJson = json_encode($finalImages);
 
+        // --- THỰC HIỆN INSERT ---
         $stmt->execute([
-            ':title' => $title,
+            ':title' => $titleRaw, // Có thể là chuỗi rỗng
             ':cat'   => $catId,
             ':price' => $price,
             ':thumb' => $thumb,
@@ -95,6 +98,15 @@ try {
             ':uid' => $userId,
             ':note' => $note
         ]);
+
+        // --- LOGIC MỚI: TỰ CẬP NHẬT TÊN = ID NẾU TRỐNG ---
+        if ($titleRaw === '') {
+            $newId = $conn->lastInsertId(); // Lấy ID vừa tạo (Chính xác tuyệt đối)
+            $sqlUpdate->execute([
+                ':newTitle' => $newId, // Gán Tên = ID (Ví dụ: 483)
+                ':id' => $newId
+            ]);
+        }
 
         $successCount++;
     }
