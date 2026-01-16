@@ -1,23 +1,22 @@
-// admin/assets/js/pages/bulk-upload.js - V5: AUTO ID DISPLAY
+// admin/assets/js/pages/bulk-upload.js
+// V7: RESTORE CATEGORY COLUMN + DEFAULT 20 ROWS
 
-let globalIndex = 0;   // Dùng để định danh duy nhất cho dòng (row_1, row_2...) phục vụ xử lý ảnh
-let rowData = {};      // Lưu trữ dữ liệu ảnh của từng dòng
-let currentRowId = 0;  // ID dòng đang mở Modal
+let globalIndex = 0;   
+let rowData = {};      
+let currentRowId = 0;  
 let isProcessing = false;
-
-// Biến đếm ID hiển thị (Lấy từ PHP truyền sang)
 let nextIdCounter = 1; 
 
 document.addEventListener('DOMContentLoaded', () => {
-    // 1. Nhận Start ID từ PHP (File add.php)
-    if (typeof BULK_CONFIG !== 'undefined' && BULK_CONFIG.startId) {
-        nextIdCounter = parseInt(BULK_CONFIG.startId);
+    // 1. Nhận cấu hình từ PHP
+    if (typeof BULK_CONFIG !== 'undefined') {
+        if (BULK_CONFIG.startId) nextIdCounter = parseInt(BULK_CONFIG.startId);
     }
 
-    // 2. Thêm sẵn 10 dòng
-    addRows(10);
+    // 2. Thêm sẵn 20 dòng (Theo yêu cầu)
+    addRows(20);
 
-    // 3. Gán sự kiện nút bấm
+    // 3. Sự kiện nút bấm
     const btnApply = document.getElementById('btnApplyGlobal');
     if(btnApply) btnApply.addEventListener('click', applyGlobal);
 
@@ -30,7 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.addEventListener('click', submitBulk);
     }
 
-    // 4. Xử lý Input file trong Modal
+    // 4. Input file modal
     const fileInput = document.getElementById('modalFileInput');
     if (fileInput) {
         fileInput.addEventListener('change', function(e) {
@@ -42,66 +41,71 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// HÀM THÊM DÒNG MỚI (ĐÃ CẬP NHẬT LOGIC ID)
+// --- HÀM THÊM DÒNG MỚI ---
 function addRows(num) {
     const tbody = document.getElementById('tableBody');
     if (!tbody) return;
 
-    let optionsHtml = '<option value="0">-- Chọn --</option>';
+    // Tạo HTML cho ô chọn danh mục (Select)
+    let catOptions = '';
     if (typeof BULK_CONFIG !== 'undefined' && BULK_CONFIG.categories) {
         BULK_CONFIG.categories.forEach(cat => {
-            optionsHtml += `<option value="${cat.id}">${cat.name}</option>`;
+            // Tự động chọn cái đầu tiên (browser mặc định chọn option đầu)
+            catOptions += `<option value="${cat.id}">${cat.name}</option>`;
         });
     }
 
     for (let i = 0; i < num; i++) {
-        globalIndex++; // Tăng index nội bộ (để quản lý rowData)
-        
-        // Lấy ID hiện tại để hiển thị, sau đó tăng lên cho vòng lặp sau
+        globalIndex++; 
         let currentDisplayId = nextIdCounter++; 
-
         rowData[globalIndex] = [];
 
         const tr = document.createElement('tr');
         tr.id = `row_${globalIndex}`;
         
-        // --- HTML CỦA DÒNG ---
-        // Cột 1: Hiển thị currentDisplayId (Ví dụ: 483)
-        // Cột Tên Acc: Placeholder hiện "Mặc định: 483"
         tr.innerHTML = `
-            <td class="text-center fw-bold text-secondary align-middle fs-5" style="color:#000!important;">${currentDisplayId}</td>
+            <!-- CỘT ID -->
+            <td class="text-center fw-bold text-secondary align-middle fs-5">
+                ${currentDisplayId}
+            </td>
             
+            <!-- CỘT ẢNH -->
             <td class="text-center">
                 <div class="img-cell-box mx-auto" onclick="openImageModal(${globalIndex})" id="imgCell_${globalIndex}">
                     <i class="ph-bold ph-plus text-secondary fs-4"></i>
                 </div>
             </td>
             
+            <!-- GIÁ TIỀN -->
             <td>
                 <input type="text" class="form-control fw-bold text-danger" 
                        name="prices[${globalIndex}]" 
                        onblur="formatBulkPrice(this)"
-                       placeholder="Nhập: 20m, 500k...">
+                       placeholder="500k...">
             </td>
             
+            <!-- TÊN ACC -->
             <td>
                 <input type="text" class="form-control text-primary fw-bold" 
                        name="titles[${globalIndex}]" 
-                       placeholder="Mặc định: ${currentDisplayId}">
+                       placeholder="Tiêu đề...">
             </td>
             
+            <!-- [KHÔI PHỤC] CỘT DANH MỤC -->
             <td>
-                <select class="form-select text-dark" name="cats[${globalIndex}]">
-                    ${optionsHtml}
+                <select class="form-select custom-input text-dark fw-bold" name="cats[${globalIndex}]">
+                    ${catOptions}
                 </select>
             </td>
             
+            <!-- GHI CHÚ -->
             <td>
                 <input type="text" class="form-control text-secondary" 
                        name="notes[${globalIndex}]" 
-                       placeholder="...">
+                       placeholder="Ghi chú...">
             </td>
             
+            <!-- NÚT XÓA -->
             <td class="text-center align-middle">
                 <i class="ph-bold ph-x text-danger fs-5 cursor-pointer" 
                    onclick="removeRow(${globalIndex})" 
@@ -112,7 +116,7 @@ function addRows(num) {
     }
 }
 
-// Logic định dạng giá (Giữ nguyên)
+// Format giá (5m -> 5.000.000)
 window.formatBulkPrice = function(input) {
     let val = input.value.trim().toLowerCase();
     if (!val) return;
@@ -139,17 +143,16 @@ window.formatBulkPrice = function(input) {
     }
 }
 
-// Xóa dòng (Giữ nguyên)
+// Xóa dòng
 function removeRow(id) {
     const row = document.getElementById(`row_${id}`);
     if (row) { 
         row.remove(); 
         delete rowData[id]; 
-        // Lưu ý: Không giảm nextIdCounter khi xóa để tránh trùng lặp hiển thị nếu thêm mới sau đó.
     }
 }
 
-// --- CÁC HÀM XỬ LÝ ẢNH & MODAL (Giữ nguyên) ---
+// --- MODAL ẢNH (Giữ nguyên) ---
 window.openImageModal = function(id) {
     currentRowId = id;
     renderModalImages();
@@ -205,16 +208,25 @@ function updateCellPreview(rowId) {
     }
 }
 
-// Áp dụng chung (Giữ nguyên)
+// Áp dụng chung (Ghi chú & Danh mục)
 function applyGlobal() {
     const noteEl = document.getElementById('globalNote');
     const catEl = document.getElementById('globalCategory');
-    if (noteEl && noteEl.value) document.querySelectorAll('input[name^="notes"]').forEach(el => el.value = noteEl.value);
-    if (catEl && catEl.value) document.querySelectorAll('select[name^="cats"]').forEach(el => el.value = catEl.value);
+    
+    // Áp dụng Ghi chú
+    if (noteEl && noteEl.value) {
+        document.querySelectorAll('input[name^="notes"]').forEach(el => el.value = noteEl.value);
+    }
+    
+    // Áp dụng Danh mục
+    if (catEl && catEl.value) {
+        document.querySelectorAll('select[name^="cats"]').forEach(el => el.value = catEl.value);
+    }
+    
     Swal.fire({ toast: true, position: 'top-end', icon: 'success', title: 'Đã áp dụng!', showConfirmButton: false, timer: 1000 });
 }
 
-// SUBMIT (Giữ nguyên logic gửi, chỉ cập nhật comment)
+// SUBMIT (LOGIC GỬI)
 async function submitBulk() {
     if (isProcessing) return;
 
@@ -224,6 +236,7 @@ async function submitBulk() {
         if (!rowEl) continue;
         const priceInput = rowEl.querySelector(`input[name="prices[${rowId}]"]`);
         const price = priceInput ? priceInput.value.trim() : '';
+        // Điều kiện: Phải có Giá + Ảnh
         if (price && files.length > 0) validRows.push(rowId);
     }
 
@@ -252,7 +265,7 @@ async function submitBulk() {
             const files = rowData[rowId];
             let uploadedNames = [];
             
-            // Upload ảnh
+            // Upload Ảnh (Chunk)
             const CHUNK_SIZE = 3; 
             for (let j = 0; j < files.length; j += CHUNK_SIZE) {
                 const chunk = files.slice(j, j + CHUNK_SIZE);
@@ -264,12 +277,13 @@ async function submitBulk() {
                 if (dataImg.status === 'success') Object.values(dataImg.data).forEach(n => uploadedNames.push(n));
             }
 
-            // Gửi thông tin
+            // Gửi thông tin (Title, Price, Note, Cat)
             const rowEl = document.getElementById(`row_${rowId}`);
             let fdPost = new FormData();
             fdPost.append('indexes[]', rowId);
             
             const titleInput = rowEl.querySelector(`input[name="titles[${rowId}]"]`);
+            // Lấy giá trị từ Select danh mục
             const catInput = rowEl.querySelector(`select[name="cats[${rowId}]"]`);
             const priceInput = rowEl.querySelector(`input[name="prices[${rowId}]"]`);
             const noteInput = rowEl.querySelector(`input[name="notes[${rowId}]"]`);

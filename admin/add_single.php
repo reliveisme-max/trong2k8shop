@@ -1,30 +1,22 @@
 <?php
-// admin/edit.php - TRANG SỬA ACC (ẨN DANH MỤC, GIỮ NGUYÊN CŨ)
+// admin/add_single.php - ĐĂNG LẺ (AUTO SELECT FIRST CATEGORY)
 require_once 'auth.php';
 require_once '../includes/config.php';
 
-if (!isset($_GET['id'])) {
-    header("Location: index.php");
-    exit;
+// 1. Lấy danh sách danh mục (Sắp xếp theo thứ tự hiển thị)
+$cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id ASC")->fetchAll();
+
+// 2. Tìm ID của danh mục đầu tiên để mặc định chọn
+$firstCatId = 0;
+if (!empty($cats)) {
+    $firstCatId = $cats[0]['id'];
 }
-$id = (int)$_GET['id'];
 
-// 1. Lấy thông tin Acc
-$stmt = $conn->prepare("SELECT * FROM products WHERE id = :id");
-$stmt->execute([':id' => $id]);
-$product = $stmt->fetch();
-
-if (!$product) die("Acc không tồn tại!");
-
-// 2. Lấy danh sách ảnh cũ
-$gallery = json_decode($product['gallery'], true);
-
-// 3. Lấy ID danh mục đầu tiên (để dự phòng nếu acc chưa có danh mục)
-$stmtCat = $conn->query("SELECT id FROM categories ORDER BY display_order ASC, id ASC LIMIT 1");
-$firstCatId = $stmtCat->fetchColumn();
-
-// Nếu acc đang có danh mục thì giữ nguyên, nếu ko có thì lấy cái đầu tiên
-$currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firstCatId ?: 0);
+// 3. Dự đoán ID tiếp theo
+$conn->query("ALTER TABLE products AUTO_INCREMENT = 1");
+$stmt = $conn->query("SELECT MAX(id) FROM products");
+$maxId = $stmt->fetchColumn();
+$nextId = $maxId ? ($maxId + 1) : 1;
 ?>
 
 <!DOCTYPE html>
@@ -33,9 +25,9 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sửa Acc #<?= $id ?></title>
+    <title>Đăng Acc Lẻ</title>
 
-    <!-- FONT & LIB -->
+    <!-- LIB -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.js"></script>
@@ -44,72 +36,47 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
     <!-- CSS -->
     <link rel="stylesheet" href="assets/css/admin.css?v=<?= time() ?>">
     <link rel="stylesheet" href="assets/css/mobile.css?v=<?= time() ?>">
-
-    <style>
-        /* CSS RIÊNG CHO MOBILE STICKY FOOTER */
-        @media (max-width: 768px) {
-            .bottom-nav {
-                display: none !important;
-            }
-
-            .main-content {
-                padding-bottom: 100px !important;
-            }
-
-            .mobile-sticky-footer {
-                position: fixed;
-                bottom: 0;
-                left: 0;
-                width: 100%;
-                background: #fff;
-                padding: 12px 15px;
-                box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-                z-index: 1000;
-                border-top: 1px solid #eee;
-                display: flex;
-                gap: 10px;
-            }
-
-            .btn-save-pc {
-                display: none;
-            }
-        }
-
-        @media (min-width: 769px) {
-            .mobile-sticky-footer {
-                display: none;
-            }
-        }
-    </style>
 </head>
 
-<body>
+<!-- Thêm class page-add-single để CSS biết đường ẩn Menu Đáy đi -->
+
+<body class="page-add-single">
+
     <!-- MENU TRÁI (PC) -->
     <?php include 'includes/sidebar.php'; ?>
 
     <main class="main-content">
         <!-- HEADER -->
         <div class="d-flex align-items-center mb-4 gap-3">
-            <a href="index.php" class="btn btn-light border btn-sm px-3 rounded-pill">
-                <i class="ph-bold ph-arrow-left"></i> Quay lại
+            <a href="index.php" class="btn btn-light border btn-sm px-3 rounded-pill d-md-none">
+                <i class="ph-bold ph-arrow-left"></i>
             </a>
-            <h4 class="m-0 text-dark fw-bold">Sửa Acc #<?= $id ?></h4>
+            <h4 class="m-0 text-dark fw-bold">Đăng Acc Lẻ</h4>
         </div>
 
         <form action="process.php" method="POST" enctype="multipart/form-data" id="addForm">
-            <input type="hidden" name="id" value="<?= $id ?>">
-            <input type="hidden" name="action" value="edit">
+            <input type="hidden" name="action" value="add_single">
 
-            <!-- [QUAN TRỌNG] ẨN DANH MỤC & TRẠNG THÁI -->
-            <input type="hidden" name="category_id" value="<?= $currentCatId ?>">
-            <input type="checkbox" name="status" value="1" <?= $product['status'] == 1 ? 'checked' : '' ?>
-                style="display: none;">
+            <!-- Trạng thái mặc định: 1 (Đang bán) -->
+            <input type="checkbox" name="status" value="1" checked style="display: none;">
 
             <div class="row g-4 flex-column-reverse flex-lg-row">
 
                 <!-- CỘT TRÁI: THÔNG TIN -->
                 <div class="col-12 col-lg-8">
                     <div class="form-card">
+
+                        <!-- DANH MỤC (Tự chọn cái đầu tiên) -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">Danh mục</label>
+                            <select name="category_id" class="form-select custom-input text-primary fw-bold">
+                                <?php foreach ($cats as $c): ?>
+                                    <option value="<?= $c['id'] ?>" <?= ($c['id'] == $firstCatId) ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($c['name']) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
 
                         <!-- GIÁ BÁN -->
                         <div class="mb-4">
@@ -120,9 +87,8 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
                                     class="input-group-text bg-light border-end-0 fw-bold text-success border">₫</span>
                                 <input type="text" name="price"
                                     class="form-control custom-input border-start-0 text-success fw-bold"
-                                    style="font-size: 18px;"
-                                    value="<?= $product['price'] > 0 ? number_format($product['price'], 0, ',', '.') : '' ?>"
-                                    placeholder="0" onblur="parsePriceShortcut(this)">
+                                    style="font-size: 18px;" placeholder="Ví dụ: 500k, 1m5..."
+                                    onblur="parsePriceShortcut(this)">
                             </div>
                         </div>
 
@@ -130,15 +96,14 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
                         <div class="mb-4">
                             <label class="form-label fw-bold text-dark">Tiêu đề / Mã Acc</label>
                             <input type="text" name="title" class="form-control custom-input"
-                                value="<?= htmlspecialchars($product['title']) ?>"
-                                placeholder="Để trống sẽ tự lấy ID làm tên">
+                                placeholder="Để trống sẽ tự lấy Mã số: <?= $nextId ?>">
                         </div>
 
                         <!-- GHI CHÚ -->
                         <div class="mb-3">
                             <label class="form-label fw-bold text-dark">Ghi chú (Admin xem)</label>
                             <textarea name="private_note" class="form-control custom-input" rows="3"
-                                placeholder="Thông tin đăng nhập..."><?= htmlspecialchars($product['private_note'] ?? '') ?></textarea>
+                                placeholder="Tài khoản, mật khẩu, thông tin..."></textarea>
                         </div>
                     </div>
                 </div>
@@ -149,8 +114,8 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
                         <label class="form-label fw-bold text-dark mb-3">ẢNH SẢN PHẨM</label>
 
                         <div class="image-uploader-area mb-3" onclick="document.getElementById('fileInput').click()">
-                            <i class="ph-duotone ph-cloud-arrow-up text-primary" style="font-size: 40px;"></i>
-                            <div class="fw-bold mt-2 text-dark">Thêm ảnh mới</div>
+                            <i class="ph-duotone ph-camera text-primary" style="font-size: 40px;"></i>
+                            <div class="fw-bold mt-2 text-dark">Chọn ảnh</div>
                         </div>
                         <input type="file" id="fileInput" name="gallery[]" accept="image/*" multiple hidden>
 
@@ -159,7 +124,7 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
                         <!-- NÚT LƯU (PC) -->
                         <button type="button" onclick="submitForm()"
                             class="btn btn-primary w-100 py-3 fw-bold text-uppercase shadow-sm btn-save-pc">
-                            <i class="ph-bold ph-floppy-disk me-2"></i> LƯU THAY ĐỔI
+                            <i class="ph-bold ph-floppy-disk me-2"></i> ĐĂNG ACC NGAY
                         </button>
                     </div>
                 </div>
@@ -173,7 +138,7 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
             <i class="ph-bold ph-x text-danger" style="font-size: 20px;"></i>
         </a>
         <button type="button" onclick="submitForm()" class="btn btn-primary fw-bold flex-grow-1 shadow-sm">
-            <i class="ph-bold ph-floppy-disk me-2"></i> LƯU THAY ĐỔI
+            <i class="ph-bold ph-floppy-disk me-2"></i> LƯU ACC NGAY
         </button>
     </div>
 
@@ -182,15 +147,6 @@ $currentCatId = ($product['category_id'] > 0) ? $product['category_id'] : ($firs
     <script src="assets/js/admin-utils.js?v=<?= time() ?>"></script>
     <script src="assets/js/pages/product-form.js?v=<?= time() ?>"></script>
 
-    <!-- KHỞI TẠO ẢNH CŨ -->
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const existingImages = <?= json_encode($gallery) ?>;
-            if (typeof initExistingImages === 'function') {
-                initExistingImages(existingImages);
-            }
-        });
-    </script>
 </body>
 
 </html>

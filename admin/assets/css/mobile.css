@@ -1,0 +1,140 @@
+/* admin/assets/css/mobile.css */
+/* CHUYÊN XỬ LÝ GIAO DIỆN MOBILE */
+
+/* =========================================
+   1. BOTTOM NAVIGATION (MENU ĐÁY)
+   ========================================= */
+.bottom-nav { display: none; } /* Ẩn trên PC */
+
+@media (max-width: 768px) {
+    /* Ẩn Sidebar PC */
+    .sidebar { display: none !important; }
+
+    /* Chỉnh lại khung nội dung chính */
+    .main-content {
+        margin-left: 0 !important;
+        padding: 15px !important;
+        padding-bottom: 90px !important; /* Chừa chỗ cho menu đáy */
+    }
+
+    /* Hiện Menu Đáy */
+    .bottom-nav {
+        display: flex; justify-content: space-around; align-items: center;
+        position: fixed; bottom: 0; left: 0; width: 100%; height: 65px;
+        background: #ffffff; box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+        z-index: 9999; border-top: 1px solid #f3f4f6;
+    }
+
+    .nav-item {
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        text-decoration: none !important; color: #9ca3af; font-size: 11px; font-weight: 600;
+        width: 25%; height: 100%; transition: 0.2s;
+    }
+    .nav-item i { font-size: 24px; margin-bottom: 4px; color: #9ca3af; transition: 0.2s; }
+    
+    .nav-item.active { color: #435ebe; }
+    .nav-item.active i { color: #435ebe; font-weight: bold; transform: translateY(-2px); }
+}
+
+/* =========================================
+   2. DANH SÁCH ACC (INDEX) - DẠNG NGANG
+   ========================================= */
+@media (max-width: 768px) {
+    /* Ẩn tiêu đề bảng */
+    .card-table table thead { display: none; }
+    
+    /* Biến mỗi dòng thành 1 thẻ Flex Ngang */
+    .card-table table tbody tr {
+        display: flex; align-items: center;
+        background: #fff; margin-bottom: 12px; border-radius: 12px;
+        padding: 12px; position: relative;
+        border: 1px solid #f0f0f0;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+
+    /* [FIX QUAN TRỌNG] TẮT HIỆU ỨNG HOVER NỀN XÁM TRÊN MOBILE */
+    .table-hover > tbody > tr:hover {
+        background-color: #fff !important; /* Giữ nguyên màu trắng khi chạm */
+    }
+    .table-hover > tbody > tr:active {
+        background-color: #f9fafb !important; /* Chỉ hơi xám nhẹ khi đang nhấn giữ */
+    }
+
+    /* Cột Ảnh (Bên trái) */
+    .cell-img { 
+        width: 60px; flex-shrink: 0; margin-right: 12px; 
+        padding: 0 !important; border: none !important; 
+    }
+    .thumb-img { 
+        width: 60px; height: 60px; border-radius: 8px; 
+        object-fit: cover; border: 1px solid #eee; 
+    }
+
+    /* Cột Thông tin (Giữa) */
+    .cell-info-wrapper { 
+        flex-grow: 1; overflow: hidden; display: flex; 
+        flex-direction: column; justify-content: center;
+        padding: 0 !important; border: none !important;
+    }
+    .mobile-title { 
+        font-weight: 700; color: #333; font-size: 14px; 
+        white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
+        margin-bottom: 2px;
+    }
+    .mobile-price { 
+        color: #ef4444; font-weight: 800; font-size: 15px; 
+    }
+    
+    /* Cột Nút 3 chấm (Bên phải) */
+    .cell-action-mobile { 
+        width: 40px; display: flex; justify-content: flex-end; 
+        padding: 0 !important; border: none !important;
+    }
+    .btn-3dots { 
+        background: none; border: none; font-size: 22px; 
+        color: #9ca3af; padding: 5px; width: 100%; text-align: right;
+    }
+    
+    /* Menu Dropdown 3 chấm đẹp hơn */
+    .dropdown-menu-mobile {
+        border: none; box-shadow: 0 5px 20px rgba(0,0,0,0.15); 
+        border-radius: 12px; padding: 8px; min-width: 160px;
+    }
+    .dropdown-item { 
+        padding: 10px 15px; font-weight: 600; font-size: 14px; border-radius: 6px; 
+    }
+    .dropdown-item i { margin-right: 8px; font-size: 18px; vertical-align: middle; }
+}
+
+/* =========================================
+   3. ĐĂNG LẺ (NÚT LƯU DÍNH ĐÁY)
+   ========================================= */
+@media (max-width: 768px) {
+    /* Ẩn thanh menu chính khi vào trang đăng */
+    body.page-add-single .bottom-nav { display: none !important; }
+    
+    /* Đẩy nội dung lên để không bị nút Lưu che */
+    body.page-add-single .main-content { padding-bottom: 80px !important; }
+
+    /* Thanh Lưu dính đáy */
+    .mobile-sticky-footer {
+        position: fixed; bottom: 0; left: 0; width: 100%;
+        background: #fff; padding: 12px 15px;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        z-index: 1000; border-top: 1px solid #eee;
+        display: flex; gap: 10px;
+    }
+    
+    /* Ẩn nút Lưu của PC */
+    .btn-save-pc { display: none; }
+}
+
+@media (min-width: 769px) {
+    .mobile-sticky-footer { display: none; }
+}
+
+/* =========================================
+   4. ĐĂNG LÔ (BẢNG VUỐT NGANG)
+   ========================================= */
+/* Không cần CSS đặc biệt, Bootstrap .table-responsive 
+   sẽ tự động tạo thanh cuộn ngang */
