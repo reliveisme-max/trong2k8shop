@@ -2,17 +2,22 @@
 // includes/functions.php - FINAL STANDARDIZED VERSION
 
 // 1. XỬ LÝ UPLOAD ẢNH (Auto convert to WebP)
+// includes/functions.php
+
 function uploadImageToWebp($fileData)
 {
     $targetDir = "../uploads/";
+
+    // 1. Kiểm tra lỗi
     if ($fileData['error'] !== 0) return false;
 
     $tempPath = $fileData['tmp_name'];
     $ext = strtolower(pathinfo($fileData['name'], PATHINFO_EXTENSION));
 
-    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) return false;
+    // 2. Cho phép các đuôi file (Bao gồm jfif)
+    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'jfif'])) return false;
 
-    // Nếu là webp rồi thì move luôn
+    // 3. Nếu là WebP sẵn thì move luôn
     if ($ext == 'webp') {
         $newFileName = 'acc_' . uniqid() . '.webp';
         if (move_uploaded_file($tempPath, $targetDir . $newFileName)) {
@@ -21,10 +26,11 @@ function uploadImageToWebp($fileData)
         return false;
     }
 
-    // Xử lý ảnh JPG/PNG
+    // 4. Tạo ảnh từ file gốc
     $image = null;
-    if ($ext == 'jpg' || $ext == 'jpeg') $image = @imagecreatefromjpeg($tempPath);
-    elseif ($ext == 'png') {
+    if ($ext == 'jpg' || $ext == 'jpeg' || $ext == 'jfif') {
+        $image = @imagecreatefromjpeg($tempPath);
+    } elseif ($ext == 'png') {
         $image = @imagecreatefrompng($tempPath);
         if ($image) {
             imagepalettetotruecolor($image);
@@ -35,21 +41,30 @@ function uploadImageToWebp($fileData)
 
     if (!$image) return false;
 
-    // Resize nếu ảnh quá lớn (>1200px)
-    $maxWidth = 1200;
+    // 5. [QUAN TRỌNG] RESIZE VỀ 2K (2560px)
+    // Nếu ảnh nhỏ hơn 2560px thì giữ nguyên, lớn hơn thì thu về 2560px
+    $maxWidth = 2560;
     $origWidth = imagesx($image);
+
     if ($origWidth > $maxWidth) {
         $newHeight = floor(imagesy($image) * ($maxWidth / $origWidth));
+
         $newImage = imagecreatetruecolor($maxWidth, $newHeight);
-        imagealphablending($newImage, false);
-        imagesavealpha($newImage, true);
+
+        if ($ext == 'png') {
+            imagealphablending($newImage, false);
+            imagesavealpha($newImage, true);
+        }
+
         imagecopyresampled($newImage, $image, 0, 0, 0, 0, $maxWidth, $newHeight, $origWidth, imagesy($image));
         imagedestroy($image);
         $image = $newImage;
     }
 
+    // 6. [QUAN TRỌNG] XUẤT WEBP CHẤT LƯỢNG 95 (Cực nét)
     $newFileName = 'acc_' . uniqid() . '.webp';
-    $result = imagewebp($image, $targetDir . $newFileName, 80); // Quality 80
+    $result = imagewebp($image, $targetDir . $newFileName, 95);
+
     imagedestroy($image);
 
     return $result ? $newFileName : false;

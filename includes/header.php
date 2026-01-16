@@ -33,20 +33,7 @@ $backLink = isset($backUrl) ? $backUrl : './';
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.css" />
     <?php endif; ?>
 
-    <!-- 3. CSS CHÍNH (INLINE) -->
-    <style>
-    <?php $cssPath=dirname(__DIR__) . '/assets/css/style.css';
-
-    if (file_exists($cssPath)) {
-        include $cssPath;
-    }
-
-    else {
-        echo "/* Lỗi: Không tìm thấy file style.css */";
-    }
-
-    ?>
-    </style>
+    <link rel="stylesheet" href="assets/css/style.css?v=<?= time() ?>">
 </head>
 
 <body>
@@ -56,7 +43,7 @@ $backLink = isset($backUrl) ? $backUrl : './';
         <div class="container d-flex justify-content-between align-items-center">
             <!-- LOGO -->
             <a href="./" class="text-decoration-none">
-                <div class="logo-text"><i class="ph-fill ph-heart"></i> TRỌNG 2K8</div>
+                <div class="logo-text"><i class="ph-fill ph-heart"></i> TT SHOP</div>
             </a>
 
             <!-- NÚT BÊN PHẢI -->
@@ -71,7 +58,7 @@ $backLink = isset($backUrl) ? $backUrl : './';
             <a href="https://zalo.me/0984074897" target="_blank"
                 class="btn btn-outline-warning rounded-pill fw-bold px-4"
                 style="color: var(--accent-hover); border-color: var(--accent);">
-                <i class="ph-bold ph-phone"></i> 0984.074.897
+                <i class="ph-bold ph-phone"></i> 0901.999.222
             </a>
             <?php endif; ?>
         </div>

@@ -74,7 +74,7 @@ try {
             for ($i = 0; $i < $count; $i++) {
                 if ($files['error'][$i] === 0) {
                     $ext = strtolower(pathinfo($files['name'][$i], PATHINFO_EXTENSION));
-                    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp'])) continue;
+                    if (!in_array($ext, ['jpg', 'jpeg', 'png', 'webp', 'jfif'])) continue;
                     $newFileName = 'acc_' . uniqid() . '_' . time() . '_' . $i . '.' . $ext;
                     if (move_uploaded_file($files['tmp_name'][$i], $targetDir . $newFileName)) {
                         $finalImages[] = $newFileName;

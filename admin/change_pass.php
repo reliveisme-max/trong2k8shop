@@ -97,7 +97,7 @@ require_once '../includes/config.php';
                         </div>
 
                         <div class="d-grid">
-                            <button type="submit" name="btn_change_pass" class="btn-submit">
+                            <button type="submit" name="btn_change_pass" class="btn btn-primary w-100 py-2 fw-bold">
                                 <i class="ph-bold ph-floppy-disk me-2"></i> CẬP NHẬT MẬT KHẨU
                             </button>
                         </div>

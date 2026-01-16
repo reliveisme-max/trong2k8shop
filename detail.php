@@ -46,34 +46,48 @@ require_once 'includes/header.php';
     <!-- 1. KHỐI THÔNG TIN SẢN PHẨM -->
     <div class="detail-header">
 
-        <!-- TIÊU ĐỀ -->
+        <!-- TIÊU ĐỀ: MÃ SỐ [ID] - [TÊN] -->
         <h1 class="detail-title">
-            Mã số: <?= htmlspecialchars($product['title']) ?>
+            <?php
+            // Logic: Nếu tên khác ID thì hiện nối chuỗi, ngược lại chỉ hiện ID
+            $displayTitle = ($product['title'] != $product['id']) ? $product['id'] . ' - ' . $product['title'] : $product['id'];
+            ?>
+            Mã số: <?= htmlspecialchars($displayTitle) ?>
         </h1>
 
-        <div class="text-secondary mb-4 small">
-            <i class="ph-fill ph-eye"></i> <?= number_format($product['views']) ?> xem &bull;
-            <i class="ph-bold ph-clock"></i> <?= date('d/m/Y', strtotime($product['created_at'])) ?>
+        <!-- LƯỢT XEM (ĐÃ BỎ NGÀY THÁNG) -->
+        <div class="detail-views">
+            <i class="ph-fill ph-eye"></i> <?= number_format($product['views']) ?> lượt xem
         </div>
 
-        <!-- HIỂN THỊ GIÁ -->
+        <!-- GIÁ BÁN -->
         <div class="mb-4">
             <div class="detail-price-lg">
-                <span class="text-secondary fw-normal fs-5">Giá Bán: </span>
+                <span class="text-secondary fw-normal fs-6 me-1">Giá: </span>
                 <?= formatPrice($product['price']) ?>
             </div>
         </div>
 
+        <!-- GHI CHÚ NỘI BỘ (CHỈ ADMIN MỚI THẤY) -->
+        <?php if (isset($_SESSION['admin_id']) && !empty($product['private_note'])): ?>
+            <div class="alert alert-warning border-0 bg-warning bg-opacity-10 text-dark text-start mb-4"
+                style="font-size: 14px;">
+                <i class="ph-bold ph-lock-key me-1"></i> <b>Admin Note:</b>
+                <?= nl2br(htmlspecialchars($product['private_note'])) ?>
+            </div>
+        <?php endif; ?>
+
         <!-- NÚT MUA -->
         <?php if ($product['status'] == 1): ?>
             <button onclick="openZalo()" class="btn-buy-lg">
-                <i class="ph-bold ph-shopping-cart me-2"></i> MÚC NGAY (QUA ZÉP LÀO)
+                <i class="ph-bold ph-shopping-cart me-2"></i> MÚC NGAY
             </button>
-            <div class="mt-3 text-secondary fst-italic small">
+            <div class="mt-3 text-secondary small" style="opacity: 0.8;">
                 <i class="ph-fill ph-shield-check text-success"></i> Giao dịch tự động hoặc trung gian uy tín 100%
             </div>
         <?php else: ?>
-            <button class="btn btn-secondary w-100 py-3 rounded-pill fw-bold mt-3" disabled>
+            <button class="btn btn-secondary w-100 py-3 rounded-3 fw-bold mt-3" disabled
+                style="background: #333; border: none;">
                 ĐÃ BÁN
             </button>
         <?php endif; ?>

@@ -10,14 +10,7 @@
                 <input type="hidden" id="qeId">
 
                 <div class="row g-3">
-                    <!-- Trạng thái -->
-                    <div class="col-12">
-                        <label class="small fw-bold text-secondary">Trạng thái</label>
-                        <select id="qeStatus" class="form-select">
-                            <option value="1">Đang bán (Hiện)</option>
-                            <option value="0">Đã bán (Ẩn)</option>
-                        </select>
-                    </div>
+                    <input type="hidden" id="qeStatus" value="1">
 
                     <!-- Tên Acc -->
                     <div class="col-12">

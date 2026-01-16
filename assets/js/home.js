@@ -155,7 +155,7 @@ function copyCode(text) {
 // ==================================================
 // B. LOGIC ADMIN (SỬA NHANH & XÓA)
 // ==================================================
-
+// Thay thế hàm openQuickEdit cũ bằng hàm mới này
 function openQuickEdit(e, id) {
     e.preventDefault(); 
     fetch('admin/api/get_product_info.php?id=' + id)
@@ -166,13 +166,32 @@ function openQuickEdit(e, id) {
                 document.getElementById('qeIdDisplay').innerText = p.id;
                 document.getElementById('qeId').value = p.id;
                 document.getElementById('qeTitle').value = p.title;
-                document.getElementById('qeStatus').value = p.status;
                 document.getElementById('qeCategory').value = p.category_id;
                 document.getElementById('qeNote').value = p.private_note || '';
                 
                 // Format giá
                 document.getElementById('qePrice').value = new Intl.NumberFormat('vi-VN').format(p.price);
                 document.getElementById('btnFullEdit').href = 'admin/edit.php?id=' + p.id;
+
+                // --- [MỚI] LOGIC TỰ ĐỘNG TRẠNG THÁI ---
+                const catSelect = document.getElementById('qeCategory');
+                const statusInput = document.getElementById('qeStatus');
+
+                // Hàm kiểm tra: Có chữ "đã bán" thì set status = 0, ngược lại = 1
+                function autoUpdateStatus() {
+                    const text = catSelect.options[catSelect.selectedIndex].text.toLowerCase();
+                    if (text.includes('đã bán')) {
+                        statusInput.value = 0;
+                    } else {
+                        statusInput.value = 1;
+                    }
+                }
+
+                // Gán sự kiện: Khi đổi danh mục thì chạy hàm kiểm tra
+                catSelect.onchange = autoUpdateStatus;
+                
+                // Chạy 1 lần ngay lúc mở modal để set đúng trạng thái ban đầu
+                autoUpdateStatus();
 
                 new bootstrap.Modal(document.getElementById('quickEditModal')).show();
             } else {

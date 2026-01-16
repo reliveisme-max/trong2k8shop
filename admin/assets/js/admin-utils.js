@@ -94,7 +94,8 @@ function uuidv4() {
 }
 
 // 5. NÉN ẢNH SANG WEBP (Promise)
-// Dùng trước khi upload để giảm dung lượng
+// admin/assets/js/admin-utils.js
+
 function compressImage(file, maxWidth, quality) {
     return new Promise((resolve) => {
         const reader = new FileReader();
@@ -103,31 +104,35 @@ function compressImage(file, maxWidth, quality) {
             const img = new Image();
             img.src = event.target.result;
             img.onload = () => {
+                // --- [SỬA] THIẾT LẬP KÍCH THƯỚC CHUẨN 1920px ---
+                // Code này: Nếu ảnh gốc > 1920 thì bóp về 1920. Nếu nhỏ hơn thì giữ nguyên.
+                const targetWidth = 2560; 
+                
                 let width = img.width;
                 let height = img.height;
                 
-                // Tính toán tỷ lệ resize
-                if (width > maxWidth) {
-                    height = Math.round((height * maxWidth) / width);
-                    width = maxWidth;
+                if (width > targetWidth) {
+                    height = Math.round((height * targetWidth) / width);
+                    width = targetWidth;
                 }
                 
-                // Vẽ lên Canvas
                 const canvas = document.createElement('canvas');
                 canvas.width = width;
                 canvas.height = height;
                 const ctx = canvas.getContext('2d');
                 ctx.drawImage(img, 0, 0, width, height);
                 
-                // Xuất ra Blob (WebP)
+                // --- [SỬA] CHẤT LƯỢNG 0.9 (tương đương 90%) ---
                 canvas.toBlob((blob) => {
-                    const newFileName = file.name.replace(/\.[^/.]+$/, "") + ".webp";
+                    let originalName = file.name.split('.').slice(0, -1).join('.');
+                    const newFileName = originalName + ".webp";
+                    
                     const newFile = new File([blob], newFileName, { 
                         type: 'image/webp', 
                         lastModified: Date.now() 
                     });
                     resolve(newFile);
-                }, 'image/webp', quality);
+                }, 'image/webp', 0.95); // 0.9 là Nét, 1.0 là Max (nặng)
             };
         };
     });

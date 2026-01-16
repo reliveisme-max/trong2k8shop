@@ -25,6 +25,31 @@ document.addEventListener('DOMContentLoaded', function () {
             fileInput.value = ''; // Reset input để chọn lại file trùng tên vẫn được
         });
     }
+    // [LOGIC MỚI] Tự động set trạng thái theo danh mục
+    const catSelect = document.querySelector('select[name="category_id"]');
+    const hiddenStatus = document.getElementById('autoStatus');
+
+    function checkAutoStatus() {
+        if (!catSelect || !hiddenStatus) return;
+        
+        const selectedText = catSelect.options[catSelect.selectedIndex].text.toLowerCase();
+        
+        // Nếu tên danh mục có chữ "đã bán" -> Bỏ tick (Status = 0)
+        // Ngược lại -> Tự động tick (Status = 1)
+        if (selectedText.includes('đã bán')) {
+            hiddenStatus.checked = false;
+        } else {
+            hiddenStatus.checked = true;
+        }
+    }
+
+    if (catSelect) {
+        // Chạy ngay khi đổi danh mục
+        catSelect.addEventListener('change', checkAutoStatus);
+        
+        // Chạy 1 lần khi vừa vào trang (để check đúng trạng thái hiện tại)
+        checkAutoStatus(); 
+    }
 });
 
 // HÀM: Load ảnh cũ từ Server (Được gọi từ file PHP)

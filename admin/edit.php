@@ -76,19 +76,9 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
                 <div class="col-12 col-lg-8">
                     <div class="form-card">
 
-                        <!-- TRẠNG THÁI -->
-                        <div
-                            class="d-flex justify-content-between align-items-center mb-4 p-3 bg-light rounded-3 border">
-                            <div>
-                                <label class="fw-bold m-0 text-dark">TRẠNG THÁI HIỂN THỊ</label>
-                                <div class="small text-secondary">Gạt tắt để ẩn acc khỏi trang chủ</div>
-                            </div>
-                            <div class="form-check form-switch">
-                                <input class="form-check-input" type="checkbox" name="status" value="1"
-                                    <?= $product['status'] == 1 ? 'checked' : '' ?>
-                                    style="width: 50px; height: 26px; cursor: pointer;">
-                            </div>
-                        </div>
+                        <!-- Input ẩn để lưu trạng thái tự động -->
+                        <input type="checkbox" name="status" id="autoStatus" value="1"
+                            <?= $product['status'] == 1 ? 'checked' : '' ?> style="display: none;">
 
                         <!-- DANH MỤC -->
                         <div class="mb-4">
@@ -97,10 +87,10 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
                             <select name="category_id" class="form-select custom-input">
                                 <option value="0">-- Chưa phân loại --</option>
                                 <?php foreach ($cats as $c): ?>
-                                <option value="<?= $c['id'] ?>"
-                                    <?= $c['id'] == $product['category_id'] ? 'selected' : '' ?>>
-                                    <?= htmlspecialchars($c['name']) ?>
-                                </option>
+                                    <option value="<?= $c['id'] ?>"
+                                        <?= $c['id'] == $product['category_id'] ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($c['name']) ?>
+                                    </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -180,13 +170,13 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id AS
 
     <!-- 3. KHỞI TẠO DỮ LIỆU BAN ĐẦU -->
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        // Truyền danh sách ảnh từ PHP sang JS để hiển thị
-        const existingImages = <?= json_encode($gallery) ?>;
-        if (typeof initExistingImages === 'function') {
-            initExistingImages(existingImages);
-        }
-    });
+        document.addEventListener('DOMContentLoaded', function() {
+            // Truyền danh sách ảnh từ PHP sang JS để hiển thị
+            const existingImages = <?= json_encode($gallery) ?>;
+            if (typeof initExistingImages === 'function') {
+                initExistingImages(existingImages);
+            }
+        });
     </script>
 </body>
 
