@@ -182,7 +182,7 @@ img { max-width: 100%; height: auto; }
 
 /* 2. Lưới Danh mục (3 Cột) */
 .grid-category {
-    display: grid; grid-template-columns: repeat(3, 1fr); 
+    display: grid; grid-template-columns: repeat(2, 1fr); 
     gap: 12px; margin-bottom: 15px;
 }
 
@@ -374,7 +374,7 @@ img { max-width: 100%; height: auto; }
 /* 2. Khung Header */
 .detail-header {
     background: #fff; 
-    padding: 40px 20px; 
+    padding: 10px 20px; 
     border-radius: 12px; 
     border: 1px solid #e5e7eb;
     margin-bottom: 30px; 
@@ -405,7 +405,7 @@ img { max-width: 100%; height: auto; }
     color: #EF4444; 
     font-weight: 700; /* Giảm độ đậm */
     font-size: 40px; 
-    margin: 10px 0 30px 0;
+    margin: 10px 0 0px 0;
     line-height: 1;
 }
 .detail-price-lg span {

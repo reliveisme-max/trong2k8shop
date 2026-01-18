@@ -1,5 +1,5 @@
 <?php
-// index.php - CLEAN VERSION (Tách biệt CSS/JS)
+// index.php - FINAL LOGIC: SORT BY CAT DEFAULT / SORT BY TIME ON CLICK
 if (session_status() === PHP_SESSION_NONE) session_start();
 
 require_once 'includes/config.php';
@@ -9,12 +9,13 @@ $isAdmin = isset($_SESSION['admin_id']);
 
 // 1. NHẬN DỮ LIỆU ĐẦU VÀO
 $keyword  = isset($_GET['q']) ? trim($_GET['q']) : '';
+$sortType = isset($_GET['sort']) ? $_GET['sort'] : ''; // Nhận biến sort
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 $limit    = 12;
 $offset   = ($page - 1) * $limit;
 $isAjax   = isset($_GET['ajax']) && $_GET['ajax'] == 1;
 
-// 2. XÂY DỰNG CÂU TRUY VẤN
+// 2. XÂY DỰNG BỘ LỌC (WHERE)
 $whereArr = [];
 $params = [];
 
@@ -24,7 +25,6 @@ if ($keyword) {
     $params[] = (int)$keyword;
 }
 
-// --- [THÊM ĐOẠN NÀY] ĐỂ LỌC DANH MỤC ---
 if (isset($_GET['cat']) && is_numeric($_GET['cat'])) {
     $whereArr[] = "p.category_id = ?";
     $params[] = (int)$_GET['cat'];
@@ -50,21 +50,34 @@ try {
         if ($page > $totalPages && $totalPages > 0) $page = $totalPages;
     }
 
+    // --- 3. LOGIC SẮP XẾP (ORDER BY) ---
+
+    if ($sortType === 'new') {
+        // TRƯỜNG HỢP 1: Bấm vào "Acc mới nhất" (?sort=new)
+        // -> Sắp xếp thuần túy theo thời gian (Mới đăng lên đầu), trộn lẫn tất cả danh mục
+        $orderBy = "ORDER BY p.id DESC";
+    } else {
+        // TRƯỜNG HỢP 2: Mặc định (Trang chủ)
+        // -> Sắp xếp ưu tiên theo THỨ TỰ DANH MỤC (1. Mới nhất -> 2. Order -> 3. Đã bán)
+        // Sau đó trong cùng 1 danh mục mới xếp theo ID
+        $orderBy = "ORDER BY 
+                    CASE WHEN c.display_order IS NULL THEN 1 ELSE 0 END ASC,
+                    c.display_order ASC, 
+                    p.id DESC";
+    }
+
     $sql = "SELECT p.* 
             FROM products p 
             LEFT JOIN categories c ON p.category_id = c.id
             $whereSql 
-            ORDER BY 
-                CASE WHEN c.display_order IS NULL THEN 1 ELSE 0 END ASC,
-                c.display_order ASC, 
-                p.id DESC 
+            $orderBy 
             LIMIT $limit OFFSET $offset";
 
     $stmt = $conn->prepare($sql);
     $stmt->execute($params);
     $products = $stmt->fetchAll();
 
-    // Lấy danh mục để dùng cho Modal Admin
+    // Lấy danh mục để dùng cho việc hiển thị nút
     $categories = $conn->query("SELECT * FROM categories ORDER BY display_order ASC")->fetchAll();
 } catch (PDOException $e) {
     if ($isAjax) die();
@@ -84,12 +97,11 @@ function renderProductCard($p, $isAdmin)
     }
 
     if ($p['status'] == 1) {
-        $statusBtn = '<a href="detail.php?id=' . $p['id'] . '" class="btn-detail text-decoration-none fw-bold text-success border-success bg-success bg-opacity-10">CÒN HÀNG</a>';
+        $statusBtn = '<a href="acc/' . $p['id'] . '" class="btn-detail text-decoration-none fw-bold text-success border-success bg-success bg-opacity-10">CÒN HÀNG</a>';
     } else {
         $statusBtn = '<span class="btn-detail text-decoration-none fw-bold text-danger border-danger bg-danger bg-opacity-10">ĐÃ BÁN</span>';
     }
 
-    // Nút Admin (Gọi hàm JS bên home.js)
     $adminBtns = '';
     if ($isAdmin) {
         $adminBtns = '
@@ -105,7 +117,7 @@ function renderProductCard($p, $isAdmin)
 ?>
     <div class="col-12 col-md-6 col-lg-4 feed-item-scroll">
         <div class="product-card position-relative">
-            <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none">
+            <a href="acc/<?= $p['id'] ?>" class="text-decoration-none">
                 <div class="product-thumb-box">
                     <img src="<?= $thumbUrl ?>" class="product-thumb" loading="lazy"
                         alt="<?= htmlspecialchars($p['title']) ?>">
@@ -113,29 +125,22 @@ function renderProductCard($p, $isAdmin)
                 </div>
             </a>
             <div class="product-body">
-                <!-- 1. TIÊU ĐỀ: MÃ [ID] - [TÊN] -->
                 <div class="d-flex align-items-center mb-2 gap-2">
-                    <a href="detail.php?id=<?= $p['id'] ?>" class="text-decoration-none product-title m-0">
+                    <a href="acc/<?= $p['id'] ?>" class="text-decoration-none product-title m-0">
                         <?php
-                        // Logic: Nếu tên khác ID thì hiện "ID - Tên", còn nếu tên trùng ID (do ko điền) thì chỉ hiện ID
                         $displayTitle = ($p['title'] != $p['id']) ? $p['id'] . ' - ' . $p['title'] : $p['id'];
                         ?>
                         Mã: <?= htmlspecialchars($displayTitle) ?>
                     </a>
-
-                    <!-- Nút Copy -->
                     <button class="btn-copy-code" onclick="copyCode('<?= htmlspecialchars($displayTitle) ?>')">
                         <i class="ph-bold ph-copy"></i> Copy
                     </button>
                 </div>
-
-                <!-- 2. THÔNG TIN PHỤ: CHỈ HIỆN VIEW (BỎ NGÀY) -->
                 <div class="d-flex align-items-center small text-secondary mt-1">
                     <span>
                         <i class="ph-fill ph-eye me-1"></i> <?= number_format($p['views']) ?> lượt xem
                     </span>
                 </div>
-
                 <div class="product-meta">
                     <div class="price-tag">
                         <span class="fw-normal text-secondary" style="font-size: 14px;">Giá: </span>
@@ -162,7 +167,6 @@ $pageTitle = "Danh sách Acc | TRƯỜNG TRẦN SHOP";
 require_once 'includes/header.php';
 ?>
 
-<!-- TRUYỀN BIẾN PHP SANG JS (Để Home.js dùng) -->
 <script>
     window.totalPages = <?= $totalPages ?>;
     window.currentPage = <?= $page ?>;
@@ -170,28 +174,22 @@ require_once 'includes/header.php';
 
 <div class="container py-4">
 
-    <!-- --- KHỐI PROFILE TACTICAL (BỐ CỤC LỆCH TRÁI) --- -->
+    <!-- PROFILE -->
     <div class="profile-tactical">
-        <!-- 1. ẢNH BÌA -->
-        <div class="pt-cover"
-            style="background-image: url('https://truongtranshop.com/903d93f4-6500-49b4-9395-31d5a8de2851.jpg');"></div>
+        <!-- 1. ẢNH BÌA (bia.jpg) -->
+        <div class="pt-cover" style="background-image: url('assets/images/bia.jpg');"></div>
 
-        <!-- 2. NỘI DUNG (Flexbox: Mobile dọc, PC ngang) -->
         <div class="pt-body">
-            <!-- AVATAR -->
+            <!-- AVATAR (avt.jpg) -->
             <div class="pt-avatar-box">
-                <img src="https://truongtranshop.com/assets/Screen-Shot-2023-06-14-at-23.33.57-808x800.png" alt="Avatar"
-                    class="pt-avatar">
+                <img src="assets/images/avt.jpg" alt="Avatar" class="pt-avatar">
             </div>
 
-            <!-- INFO -->
             <div class="pt-info">
                 <h2 class="pt-name">
                     TRƯỜNG TRẦN
-                    <!-- Icon Rank thay vì tích xanh thường -->
                     <i class="ph-fill ph-seal-check pt-rank-badge" title="Verified Shop"></i>
                 </h2>
-
                 <div class="pt-bio">
                     <p class="mb-1"><i class="ph-bold ph-target text-secondary"></i> <b>Chuyên:</b> Mua Bán - Trao Đổi -
                         Cầm Cố Acc Game</p>
@@ -199,8 +197,6 @@ require_once 'includes/header.php';
                         Thấp - Thu Mua Giá Cao</p>
                     <p class="mb-0 text-danger fw-bold"><i class="ph-fill ph-fire"></i> Hotline/Zalo: 0901.999.222</p>
                 </div>
-
-                <!-- Nút bấm vuông vức kiểu game -->
                 <div class="pt-actions">
                     <a href="https://zalo.me/0901999222" target="_blank" class="btn-tactical btn-zalo-tac">
                         <i class="ph-bold ph-chat-circle-dots" style="font-size: 18px;"></i> NHẮN ZALO
@@ -213,7 +209,7 @@ require_once 'includes/header.php';
         </div>
     </div>
 
-    <!-- HEADER -->
+    <!-- HEADER LIST -->
     <div class="list-header-wrapper align-items-center">
         <div class="d-flex align-items-center gap-2">
             <h4 class="fw-bold m-0" style="color: var(--text-main);">
@@ -223,44 +219,47 @@ require_once 'includes/header.php';
         </div>
     </div>
 
-    <!-- 1. THANH TÌM KIẾM -->
+    <!-- TÌM KIẾM -->
     <form action="" method="GET" class="search-bar-unified">
         <input type="text" name="q" class="inp-search-unified" placeholder="Nhập mã số, tên acc..."
             value="<?= htmlspecialchars($keyword) ?>">
         <button type="submit" class="btn-search-unified">TÌM KIẾM</button>
     </form>
 
-    <!-- 2. DANH MỤC (Icon Mảnh - ph-light) -->
+    <!-- DANH MỤC -->
     <div class="grid-category">
         <?php
         $catList = $conn->query("SELECT * FROM categories ORDER BY display_order ASC")->fetchAll();
 
         foreach ($catList as $cat):
             $nameLower = mb_strtolower($cat['name']);
+
+            // --- ẨN ACC ORDER ---
+            if (strpos($nameLower, 'order') !== false) continue;
+
             $colorClass = 'solid-dark';
             $iconClass = 'ph-tag';
+            $linkUrl = "?cat=" . $cat['id'];
+            $isActive = (isset($_GET['cat']) && $_GET['cat'] == $cat['id']) ? 'active' : '';
 
+            // --- NÚT ACC MỚI NHẤT -> Chuyển sang chế độ xem thời gian (?sort=new) ---
             if (strpos($nameLower, 'mới') !== false) {
                 $colorClass = 'solid-red';
                 $iconClass = 'ph-fire';
-            } elseif (strpos($nameLower, 'order') !== false) {
-                $colorClass = 'solid-blue';
-                $iconClass = 'ph-airplane-tilt';
+                $linkUrl = "?sort=new";
+                $isActive = (isset($_GET['sort']) && $_GET['sort'] == 'new') ? 'active' : '';
             } elseif (strpos($nameLower, 'đã bán') !== false) {
                 $colorClass = 'solid-dark';
                 $iconClass = 'ph-lock-key';
             }
-
-            $isActive = (isset($_GET['cat']) && $_GET['cat'] == $cat['id']) ? 'active' : '';
         ?>
-            <a href="?cat=<?= $cat['id'] ?>" class="btn-solid <?= $colorClass ?> <?= $isActive ?>">
-                <!-- Dùng ph-light cho nét mảnh -->
+            <a href="<?= $linkUrl ?>" class="btn-solid <?= $colorClass ?> <?= $isActive ?>">
                 <i class="ph-light <?= $iconClass ?>"></i> <?= htmlspecialchars($cat['name']) ?>
             </a>
         <?php endforeach; ?>
     </div>
 
-    <!-- 3. GIÁ TIỀN (Icon Mảnh) -->
+    <!-- GIÁ TIỀN -->
     <div class="grid-price">
         <a href="?min=1000000&max=5000000" class="btn-price-flat <?= checkActive(1000000, 5000000) ?>">
             <i class="ph-light ph-coins"></i> 1m - 5m
@@ -274,7 +273,6 @@ require_once 'includes/header.php';
         <a href="?min=15000000&max=20000000" class="btn-price-flat <?= checkActive(15000000, 20000000) ?>">
             <i class="ph-light ph-coins"></i> 15m - 20m
         </a>
-
         <a href="?min=20000000&max=30000000" class="btn-price-flat <?= checkActive(20000000, 30000000) ?>">
             <i class="ph-light ph-coins"></i> 20m - 30m
         </a>
@@ -288,6 +286,7 @@ require_once 'includes/header.php';
             <i class="ph-bold ph-crown"></i> Trên 70m
         </a>
     </div>
+
     <!-- GRID -->
     <div class="row position-relative" id="productGrid" style="margin: 0 -12px;">
         <?php if (count($products) > 0): ?>
@@ -298,7 +297,7 @@ require_once 'includes/header.php';
                 <div class="text-center">
                     <i class="ph-duotone ph-magnifying-glass text-secondary opacity-25" style="font-size: 80px;"></i>
                     <p class="text-secondary fw-bold mt-3 mb-4">Không tìm thấy Acc phù hợp!</p>
-                    <a href="index.php" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
+                    <a href="./" class="btn btn-warning text-white rounded-pill px-4 fw-bold shadow-sm">
                         <i class="ph-bold ph-arrow-counter-clockwise me-1"></i> Xem tất cả
                     </a>
                 </div>
@@ -306,7 +305,7 @@ require_once 'includes/header.php';
         <?php endif; ?>
     </div>
 
-    <!-- PAGINATION -->
+    <!-- PHÂN TRANG -->
     <?php if ($totalPages > 1): ?>
         <div class="pagination-container-modern">
             <div class="pagi-nav-btn js-prev-btn <?= ($page <= 1) ? 'disabled' : '' ?>"
@@ -333,7 +332,7 @@ require_once 'includes/header.php';
 
 </div>
 
-<!-- INCLUDE MODAL ADMIN -->
+<!-- MODAL ADMIN -->
 <?php if ($isAdmin): ?>
     <?php include 'includes/modals/admin-quick-edit.php'; ?>
 <?php endif; ?>

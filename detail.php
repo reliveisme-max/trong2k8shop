@@ -35,7 +35,7 @@ if (!empty($product['thumb'])) {
 }
 
 // --- CẤU HÌNH HEADER ---
-$pageTitle = "Mã số: " . $product['title'] . " | TRỌNG 2K8 SHOP";
+$pageTitle = "Mã số: " . $product['title'] . " | TRƯỜNG TRẦN SHOP";
 $isDetailPage = true;
 $backUrl = 'index.php'; // Luôn quay về trang chủ
 
@@ -112,21 +112,6 @@ require_once 'includes/header.php';
                     </div>
                 </div>
             </div>
-        <?php endif; ?>
-
-        <!-- NÚT MUA -->
-        <?php if ($product['status'] == 1): ?>
-            <button onclick="openZalo()" class="btn-buy-lg">
-                <i class="ph-bold ph-shopping-cart me-2"></i> MÚC NGAY
-            </button>
-            <div class="mt-3 text-secondary small" style="opacity: 0.8;">
-                <i class="ph-fill ph-shield-check text-success"></i> Giao dịch tự động hoặc trung gian uy tín 100%
-            </div>
-        <?php else: ?>
-            <button class="btn btn-secondary w-100 py-3 rounded-3 fw-bold mt-3" disabled
-                style="background: #333; border: none; max-width: 450px;">
-                ĐÃ BÁN
-            </button>
         <?php endif; ?>
     </div>
 

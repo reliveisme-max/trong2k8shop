@@ -15,6 +15,11 @@ $backLink = isset($backUrl) ? $backUrl : './';
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="<?= BASE_URL ?>">
+
+    <!-- THÊM DÒNG NÀY ĐỂ HIỆN FAVICON -->
+    <link rel="shortcut icon" href="assets/images/avatar.jpg" type="image/x-icon">
+    <link rel="icon" href="assets/images/avatar.jpg" type="image/x-icon">
     <title><?= htmlspecialchars($pageTitle) ?></title>
 
     <!-- 1. CÁC THƯ VIỆN CỐT LÕI -->
@@ -55,7 +60,7 @@ $backLink = isset($backUrl) ? $backUrl : './';
             </a>
             <?php else: ?>
             <!-- Nút Zalo (Cho trang chủ) -->
-            <a href="https://zalo.me/0984074897" target="_blank"
+            <a href="https://zalo.me/0901999222" target="_blank"
                 class="btn btn-outline-warning rounded-pill fw-bold px-4"
                 style="color: var(--accent-hover); border-color: var(--accent);">
                 <i class="ph-bold ph-phone"></i> 0901.999.222
