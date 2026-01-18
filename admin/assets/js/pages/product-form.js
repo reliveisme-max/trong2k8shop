@@ -136,15 +136,21 @@ async function submitForm() {
             const chunkFormData = new FormData();
             chunkFormData.append('ajax_upload_mode', '1');
 
-            // Nén ảnh (Sử dụng hàm compressImage từ admin-utils.js)
-            const compressionPromises = localUploadTasks.map(async (task) => {
-                const file = fileStore[task.uid];
-                if (file) {
-                    const compressed = await compressImage(file, 1200, 0.7);
-                    chunkFormData.append('chunk_files[]', compressed, compressed.name);
-                    chunkFormData.append('chunk_uids[]', task.uid); 
-                }
-            });
+            // 1. Kiểm tra xem nút gạt có BẬT không?
+const isCompress = document.getElementById('compressToggle')?.checked;
+// Nếu BẬT thì nén 0.8 (80%), nếu TẮT thì để nét căng 0.95 (95%)
+const qualityVal = isCompress ? 0.8 : 0.95; 
+
+// 2. Áp dụng vào vòng lặp
+const compressionPromises = localUploadTasks.map(async (task) => {
+    const file = fileStore[task.uid];
+    if (file) {
+        // Truyền qualityVal vào hàm
+        const compressed = await compressImage(file, 2560, qualityVal);
+        chunkFormData.append('chunk_files[]', compressed, compressed.name);
+        chunkFormData.append('chunk_uids[]', task.uid); 
+    }
+});
 
             await Promise.all(compressionPromises);
 

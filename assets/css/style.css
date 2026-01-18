@@ -367,7 +367,6 @@ img { max-width: 100%; height: auto; }
 
 /* 1. Container: Giới hạn 1200px + Căn giữa */
 .detail-container {
-    max-width: 1200px; 
     margin: 0 auto; 
     padding: 0 15px; /* Cách lề 1 chút trên mobile */
 }

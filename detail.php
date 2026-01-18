@@ -108,7 +108,6 @@ require_once 'includes/header.php';
                 <div class="d-flex gap-2">
                     <i class="ph-bold ph-lock-key fs-4 mt-1 text-danger"></i>
                     <div>
-                        <strong class="text-danger">Ghi chú Admin (Khách không thấy):</strong><br>
                         <?= nl2br(htmlspecialchars($product['private_note'])) ?>
                     </div>
                 </div>
@@ -141,30 +140,23 @@ require_once 'includes/header.php';
         </div>
     </div>
 
-    <!-- 3. HIỆU ỨNG LOADING SPINNER -->
-    <div class="loading-spinner" id="loadingIcon">
-        <div class="spinner-icon"></div>
-        <div class="mt-2 text-secondary small">Đang tải thêm ảnh...</div>
-    </div>
-
 </div>
 
 <!-- SCRIPTS RIÊNG CHO TRANG CHI TIẾT -->
 <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@5.0/dist/fancybox/fancybox.umd.js"></script>
 <script>
-    // Cấu hình Fancybox (Xem ảnh phóng to)
+    // Cấu hình Fancybox
     Fancybox.bind("[data-fancybox]", {
         Thumbs: {
             type: "modern"
         }
     });
 
-    // Logic Lazy Load ảnh
+    // --- LOGIC LAZY LOAD (KHÔNG HIỆN ICON) ---
     const galleryImages = <?= json_encode($gallery) ?>;
     let currentIndex = 0;
     const loadBatch = 3; // Mỗi lần tải thêm 3 ảnh
     const feedContainer = document.getElementById('galleryFeed');
-    const loadingEl = document.getElementById('loadingIcon');
     let isLoading = false;
 
     function renderImages(count) {
@@ -173,6 +165,8 @@ require_once 'includes/header.php';
             const imgName = galleryImages[i];
             const div = document.createElement('div');
             div.className = 'feed-item';
+            // Thêm hiệu ứng fade-in nhẹ nhàng
+            div.style.animation = "fadeIn 0.5s ease-in-out";
             div.innerHTML = `
                 <a href="uploads/${imgName}" data-fancybox="gallery">
                     <img src="uploads/${imgName}" loading="lazy" alt="Ảnh chi tiết">
@@ -181,14 +175,16 @@ require_once 'includes/header.php';
             feedContainer.appendChild(div);
         }
         currentIndex = max;
+
+        // Nếu hết ảnh thì tắt sự kiện cuộn
         if (currentIndex >= galleryImages.length) {
-            loadingEl.remove(); // Hết ảnh thì xóa loading
             window.removeEventListener('scroll', handleScroll);
         }
     }
 
     function handleScroll() {
         if (isLoading) return;
+        // Khi cuộn gần đến đáy (còn 600px) thì tải tiếp
         if ((window.innerHeight + window.scrollY) >= document.body.offsetHeight - 600) {
             if (currentIndex < galleryImages.length) {
                 loadMore();
@@ -198,32 +194,40 @@ require_once 'includes/header.php';
 
     function loadMore() {
         isLoading = true;
-        loadingEl.style.display = 'block';
-        setTimeout(() => {
-            renderImages(loadBatch);
-            isLoading = false;
-            if (currentIndex < galleryImages.length) loadingEl.style.display = 'none';
-        }, 300);
+        // Không cần delay giả (setTimeout) nữa, tải luôn cho mượt
+        renderImages(loadBatch);
+        isLoading = false;
     }
 
-    // Khởi chạy: Tải trước 2 ảnh đầu tiên (ngoài ảnh bìa)
+    // Khởi chạy: Tải trước 3 ảnh đầu tiên
     if (galleryImages.length > 0) {
-        renderImages(2);
-    } else {
-        loadingEl.remove();
+        renderImages(3);
     }
     window.addEventListener('scroll', handleScroll);
 
     // Logic mở Zalo
     function openZalo() {
-        var zaloPhone = "0984074897"; // Số Zalo của bạn
+        var zaloPhone = "0984074897";
         var isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-        var zaloLink = isMobile ?
-            `https://zalo.me/${zaloPhone}` :
-            `https://chat.zalo.me/?phone=${zaloPhone}`;
+        var zaloLink = isMobile ? `https://zalo.me/${zaloPhone}` : `https://chat.zalo.me/?phone=${zaloPhone}`;
         window.open(zaloLink, '_blank');
     }
 </script>
+
+<!-- Thêm chút CSS cho ảnh hiện ra mượt mà -->
+<style>
+    @keyframes fadeIn {
+        from {
+            opacity: 0;
+            transform: translateY(10px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+</style>
 
 <!-- [QUAN TRỌNG] LẤY DANH MỤC TRƯỚC KHI GỌI MODAL -->
 <?php

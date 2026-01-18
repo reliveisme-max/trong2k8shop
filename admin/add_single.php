@@ -71,9 +71,9 @@ $nextId = $maxId ? ($maxId + 1) : 1;
                             <label class="form-label fw-bold text-dark">Danh mục</label>
                             <select name="category_id" class="form-select custom-input text-primary fw-bold">
                                 <?php foreach ($cats as $c): ?>
-                                    <option value="<?= $c['id'] ?>" <?= ($c['id'] == $firstCatId) ? 'selected' : '' ?>>
-                                        <?= htmlspecialchars($c['name']) ?>
-                                    </option>
+                                <option value="<?= $c['id'] ?>" <?= ($c['id'] == $firstCatId) ? 'selected' : '' ?>>
+                                    <?= htmlspecialchars($c['name']) ?>
+                                </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -112,7 +112,12 @@ $nextId = $maxId ? ($maxId + 1) : 1;
                 <div class="col-12 col-lg-4">
                     <div class="form-card sticky-top" style="top: 20px; z-index: 2;">
                         <label class="form-label fw-bold text-dark mb-3">ẢNH SẢN PHẨM</label>
-
+                        <!-- Nút gạt nén ảnh -->
+                        <div class="form-check form-switch mb-3 bg-light p-2 rounded border">
+                            <input class="form-check-input ms-0 me-2" type="checkbox" id="compressToggle">
+                            <label class="form-check-label fw-bold small" for="compressToggle">Nén ảnh (Giảm nhẹ còn
+                                80%)</label>
+                        </div>
                         <div class="image-uploader-area mb-3" onclick="document.getElementById('fileInput').click()">
                             <i class="ph-duotone ph-camera text-primary" style="font-size: 40px;"></i>
                             <div class="fw-bold mt-2 text-dark">Chọn ảnh</div>

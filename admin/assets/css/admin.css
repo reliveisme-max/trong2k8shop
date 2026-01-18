@@ -330,3 +330,132 @@ h4.text-dark { color: var(--text-main) !important; font-weight: 800 !important; 
         font-weight: bold;
     }
 }
+/* --- FIX CSS MODAL QUẢN LÝ ẢNH (ĐĂNG LÔ) --- */
+
+/* 1. Lưới hiển thị ảnh trong Modal */
+#modalImgGrid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr); /* 4 ảnh trên 1 hàng */
+    gap: 12px;
+    margin-top: 15px;
+}
+
+/* 2. Ô chứa từng ảnh (Vuông vức) */
+.modal-item {
+    position: relative;
+    width: 100%;
+    padding-top: 100%; /* Kỹ thuật tạo tỉ lệ 1:1 */
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+}
+
+/* 3. Ảnh bên trong (Co giãn vừa khít) */
+.modal-item img {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover; /* Cắt ảnh đẹp không bị méo */
+}
+
+/* 4. Nút xóa ảnh (Dấu X nhỏ) */
+.modal-item .btn-del-img {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 22px;
+    height: 22px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #ef4444; /* Màu đỏ */
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    z-index: 10;
+}
+.modal-item .btn-del-img:hover {
+    background: #ef4444;
+    color: white;
+}
+
+/* Responsive cho điện thoại (3 ảnh/hàng) */
+@media (max-width: 576px) {
+    #modalImgGrid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+/* --- FIX Ô ẢNH TRONG BẢNG ĐĂNG LÔ --- */
+
+/* 1. Định hình cái khung chứa ảnh */
+.img-cell-box {
+    width: 60px;             /* Chiều rộng cố định */
+    height: 60px;            /* Chiều cao cố định */
+    position: relative;      /* Để căn chỉnh số lượng ảnh */
+    overflow: hidden;        /* Cắt bỏ phần ảnh thừa */
+    border-radius: 8px;      /* Bo góc */
+    border: 1px dashed #ccc; /* Viền nét đứt */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto;          /* Căn giữa ô */
+    background: #f9f9f9;
+    cursor: pointer;
+}
+
+/* 2. Ép ảnh phải nằm gọn trong khung */
+.img-cell-box img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;       /* Cắt ảnh vừa khung, không bị méo */
+    display: block;
+}
+
+/* 3. Hiển thị số lượng ảnh (+2, +3...) */
+.img-cell-count {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7); /* Nền đen mờ */
+    color: #fff;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-top-left-radius: 6px;
+    z-index: 2;
+}
+
+/* Hiệu ứng khi di chuột vào */
+.img-cell-box:hover {
+    border-color: #0d6efd;   /* Đổi màu viền khi hover */
+    background-color: #e9ecef;
+}
+/* --- FIX CĂN GIỮA ICON TRONG CÁC NÚT THAO TÁC --- */
+.table .btn {
+    display: inline-flex !important; /* Chuyển sang Flexbox */
+    align-items: center;             /* Căn giữa theo chiều dọc */
+    justify-content: center;         /* Căn giữa theo chiều ngang */
+    vertical-align: middle;
+}
+/* --- SỬA LẠI ĐOẠN NÀY ĐỂ ICON SANG PHẢI --- */
+
+/* 1. Đẩy icon sang phải */
+.position-relative .ph-magnifying-glass {
+    left: auto !important;   /* Hủy bỏ căn trái cũ */
+    right: 15px !important;  /* Căn phải 15px */
+    color: var(--text-sub);
+    font-size: 20px;
+    z-index: 5;
+}
+
+/* 2. Chỉnh padding cho ô nhập (để chữ không đè lên icon bên phải) */
+.position-relative input#searchInput {
+    padding-left: 15px !important;  /* Bên trái để bình thường */
+    padding-right: 55px !important; /* Bên phải chừa chỗ cho icon */
+}

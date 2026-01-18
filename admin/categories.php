@@ -44,25 +44,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC")->fet
 </head>
 
 <body>
-    <aside class="sidebar">
-        <!-- LOGO MỚI -->
-        <div class="brand"><i class="ph-fill ph-crown"></i> ADMIN PANEL</div>
-
-        <nav class="d-flex flex-column gap-2">
-            <a href="index.php" class="menu-item"><i class="ph-bold ph-squares-four"></i> Tổng Quan</a>
-
-            <!-- MENU MỚI -->
-            <a href="add.php" class="menu-item"><i class="ph-bold ph-plus-circle"></i> Đăng Acc Mới</a>
-
-            <a href="categories.php" class="menu-item"><i class="ph-bold ph-list-dashes"></i> Danh Mục Game</a>
-            <a href="change_pass.php" class="menu-item"><i class="ph-bold ph-lock-key"></i> Đổi mật khẩu</a>
-
-            <div class="mt-auto">
-                <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-bold ph-sign-out"></i> Đăng
-                    xuất</a>
-            </div>
-        </nav>
-    </aside>
+    <?php include 'includes/sidebar.php'; ?>
 
     <main class="main-content">
         <div class="d-flex align-items-center mb-4">
@@ -133,6 +115,7 @@ $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC")->fet
             </div>
         </div>
     </main>
+    <?php include 'includes/bottom_nav.php'; ?>
 </body>
 
 </html>

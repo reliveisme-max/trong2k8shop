@@ -132,7 +132,7 @@ function compressImage(file, maxWidth, quality) {
                         lastModified: Date.now() 
                     });
                     resolve(newFile);
-                }, 'image/webp', 0.95); // 0.9 là Nét, 1.0 là Max (nặng)
+                }, 'image/webp', quality); // 0.9 là Nét, 1.0 là Max (nặng)
             };
         };
     });

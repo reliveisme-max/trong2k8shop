@@ -9,6 +9,8 @@ $current_id = $_SESSION['admin_id'];
 // --- 1. XỬ LÝ XÓA NHIỀU ---
 if (isset($_POST['btn_delete_multi']) && !empty($_POST['selected_ids'])) {
     $ids = $_POST['selected_ids'];
+    // THÊM DÒNG NÀY VÀO ĐỂ LỌC TRÙNG ID BÊN PHP
+    $ids = array_unique($ids);
     $countDeleted = 0;
     foreach ($ids as $id) {
         $id = (int)$id;
@@ -40,14 +42,15 @@ $catId    = isset($_GET['cat']) ? (int)$_GET['cat'] : 0;
 $noteFilter = isset($_GET['note']) ? trim($_GET['note']) : ''; // Lọc ghi chú mới
 $page     = isset($_GET['page']) ? (int)$_GET['page'] : 1;
 if ($page < 1) $page = 1;
-$limit    = 10;
+$limit    = 50;
 $offset   = ($page - 1) * $limit;
 
 $whereArr = [];
 $params = [];
 
 if ($keyword) {
-    $whereArr[] = "(p.title LIKE :kw OR p.id = :id)";
+    // Thêm "OR p.private_note LIKE :kw" vào cuối
+    $whereArr[] = "(p.title LIKE :kw OR p.id = :id OR p.private_note LIKE :kw)";
     $params[':kw'] = "%$keyword%";
     $params[':id'] = (int)$keyword;
 }
@@ -127,17 +130,29 @@ function renderTableBody($products)
                 <img src="<?= $thumb ?>" class="thumb-img" loading="lazy">
             </td>
 
-            <!-- 3. MOBILE INFO (Chỉ hiện Mobile - Dòng ngang) -->
-            <td class="d-md-none cell-info-wrapper">
-                <div class="mobile-title">#<?= $p['id'] ?> - <?= htmlspecialchars($p['title']) ?></div>
-                <div class="mobile-price"><?= formatPrice($p['price']) ?></div>
-                <div class="mobile-meta">
-                    <span class="badge bg-light text-dark border px-2 me-2"><?= $catName ?></span>
-                    <?php if ($p['private_note']): ?>
-                        <span class="text-secondary fst-italic text-truncate" style="max-width: 100px;">
-                            <i class="ph-fill ph-note"></i> <?= htmlspecialchars($p['private_note']) ?>
-                        </span>
-                    <?php endif; ?>
+            <!-- 3. MOBILE INFO (Chỉ hiện Mobile) -->
+            <td class="d-md-none cell-info-wrapper ps-2">
+                <!-- Thêm ps-2 để cách lề -->
+
+                <div class="d-flex align-items-center gap-3">
+                    <!-- CHECKBOX MOBILE -->
+                    <input type="checkbox" name="selected_ids[]" value="<?= $p['id'] ?>"
+                        class="form-check-input item-check flex-shrink-0"
+                        style="width: 20px; height: 20px; border: 2px solid #ccc;" onclick="updateDeleteBtn()">
+
+                    <!-- NỘI DUNG CŨ -->
+                    <div class="flex-grow-1">
+                        <div class="mobile-title">#<?= $p['id'] ?> - <?= htmlspecialchars($p['title']) ?></div>
+                        <div class="mobile-price"><?= formatPrice($p['price']) ?></div>
+                        <div class="mobile-meta">
+                            <span class="badge bg-light text-dark border px-2 me-2"><?= $catName ?></span>
+                            <?php if ($p['private_note']): ?>
+                                <span class="text-secondary fst-italic text-truncate" style="max-width: 100px;">
+                                    <i class="ph-fill ph-note"></i> <?= htmlspecialchars($p['private_note']) ?>
+                                </span>
+                            <?php endif; ?>
+                        </div>
+                    </div>
                 </div>
             </td>
 
@@ -163,7 +178,7 @@ function renderTableBody($products)
                     <a href="../detail.php?id=<?= $p['id'] ?>" target="_blank" class="btn btn-light border btn-sm" title="Xem">
                         <i class="ph-bold ph-eye"></i>
                     </a>
-                    <a href="add_single.php?id=<?= $p['id'] ?>" class="btn btn-primary btn-sm text-white fw-bold">
+                    <a href="edit.php?id=<?= $p['id'] ?>" class="btn btn-primary btn-sm text-white fw-bold">
                         <i class="ph-bold ph-pencil-simple"></i> Sửa
                     </a>
                     <a href="delete.php?id=<?= $p['id'] ?>" class="btn btn-danger btn-sm text-white fw-bold"
@@ -180,8 +195,10 @@ function renderTableBody($products)
                     <ul class="dropdown-menu dropdown-menu-end dropdown-menu-mobile shadow">
                         <li><a class="dropdown-item" href="../detail.php?id=<?= $p['id'] ?>" target="_blank"><i
                                     class="ph-bold ph-eye text-primary"></i> Xem chi tiết</a></li>
-                        <li><a class="dropdown-item" href="add_single.php?id=<?= $p['id'] ?>"><i
+                        <li><a class="dropdown-item" href="edit.php?id=<?= $p['id'] ?>"><i
                                     class="ph-bold ph-pencil-simple text-warning"></i> Sửa acc</a></li>
+                        <!-- KẾT THÚC SỬA -->
+
                         <li>
                             <hr class="dropdown-divider my-1">
                         </li>
@@ -297,11 +314,14 @@ function renderPagination($page, $totalPages)
                 <!-- 2. Tìm kiếm -->
                 <div class="col-6 col-md-5">
                     <div class="position-relative">
-                        <input type="text" id="searchInput" class="form-control border bg-light ps-5"
+                        <!-- Input: Đổi ps-5 thành pe-5 -->
+                        <input type="text" id="searchInput" class="form-control border bg-light pe-5"
                             placeholder="Tìm kiếm..." value="<?= htmlspecialchars($keyword) ?>"
                             onkeypress="if(event.key === 'Enter') applyFilter();">
+
+                        <!-- Icon: Đổi start-0 thành end-0 và ms-3 thành me-3 -->
                         <i
-                            class="ph-bold ph-magnifying-glass position-absolute top-50 start-0 translate-middle-y ms-3 text-secondary"></i>
+                            class="ph-bold ph-magnifying-glass position-absolute top-50 end-0 translate-middle-y me-3 text-secondary"></i>
                     </div>
                 </div>
 
@@ -312,7 +332,7 @@ function renderPagination($page, $totalPages)
                         <option value="">-- Lọc theo Ghi chú --</option>
                         <?php foreach ($notes as $note): ?>
                             <option value="<?= htmlspecialchars($note) ?>" <?= $noteFilter === $note ? 'selected' : '' ?>>
-                                Note: <?= htmlspecialchars($note) ?>
+                                <?= htmlspecialchars($note) ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -332,6 +352,12 @@ function renderPagination($page, $totalPages)
             <div class="card-table position-relative">
                 <div id="ajaxLoading" class="ajax-loading-overlay d-none">
                     <div class="spinner-border text-primary" role="status"></div>
+                </div>
+                <!-- MOBILE: NÚT CHỌN TẤT CẢ -->
+                <div class="d-md-none d-flex align-items-center gap-2 mb-2 px-2">
+                    <input type="checkbox" id="mobileCheckAll" class="form-check-input"
+                        style="width: 20px; height: 20px; border: 2px solid #666;" onclick="toggleAll(this)">
+                    <label for="mobileCheckAll" class="fw-bold text-secondary">Chọn tất cả (để xóa)</label>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">

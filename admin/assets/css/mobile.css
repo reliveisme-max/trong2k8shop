@@ -45,20 +45,20 @@
     
     /* Biến mỗi dòng thành 1 thẻ Flex Ngang */
     .card-table table tbody tr {
-        display: flex; align-items: center;
-        background: #fff; margin-bottom: 12px; border-radius: 12px;
-        padding: 12px; position: relative;
-        border: 1px solid #f0f0f0;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    }
+    display: flex; align-items: center;
+    background: #fff !important; /* <--- THÊM !IMPORTANT VÀO ĐÂY */
+    margin-bottom: 12px; border-radius: 12px;
+    padding: 12px; position: relative;
+    border: 1px solid #f0f0f0;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
 
     /* [FIX QUAN TRỌNG] TẮT HIỆU ỨNG HOVER NỀN XÁM TRÊN MOBILE */
-    .table-hover > tbody > tr:hover {
-        background-color: #fff !important; /* Giữ nguyên màu trắng khi chạm */
-    }
-    .table-hover > tbody > tr:active {
-        background-color: #f9fafb !important; /* Chỉ hơi xám nhẹ khi đang nhấn giữ */
-    }
+    .table-hover > tbody > tr:hover,
+.table-hover > tbody > tr:active,
+.table-hover > tbody > tr:focus {
+    background-color: #fff !important; /* Luôn trắng kể cả khi bấm vào */
+}
 
     /* Cột Ảnh (Bên trái) */
     .cell-img { 
@@ -71,11 +71,21 @@
     }
 
     /* Cột Thông tin (Giữa) */
-    .cell-info-wrapper { 
-        flex-grow: 1; overflow: hidden; display: flex; 
-        flex-direction: column; justify-content: center;
-        padding: 0 !important; border: none !important;
-    }
+    /* Cột Thông tin (Giữa) - SỬA LẠI ĐOẠN NÀY */
+.cell-info-wrapper { 
+    flex-grow: 1; 
+    overflow: hidden; 
+    display: block; /* Đổi thành block để div con d-flex hoạt động */
+    padding: 8px 0 !important; /* Thêm chút padding trên dưới */
+    border: none !important;
+}
+
+/* Fix lỗi checkbox bị đè nếu có */
+.item-check {
+    position: relative;
+    z-index: 5;
+    margin-right: 10px; /* Cách nội dung ra 1 chút */
+}
     .mobile-title { 
         font-weight: 700; color: #333; font-size: 14px; 
         white-space: nowrap; overflow: hidden; text-overflow: ellipsis; 
@@ -133,8 +143,9 @@
     .mobile-sticky-footer { display: none; }
 }
 
-/* =========================================
-   4. ĐĂNG LÔ (BẢNG VUỐT NGANG)
-   ========================================= */
-/* Không cần CSS đặc biệt, Bootstrap .table-responsive 
-   sẽ tự động tạo thanh cuộn ngang */
+/* --- FIX LỖI HOVER CỦA BOOTSTRAP TRÊN MOBILE --- */
+.table-hover > tbody > tr:hover > * {
+    --bs-table-accent-bg: transparent !important; /* Xóa màu accent của Bootstrap */
+    background-color: transparent !important;     /* Cho nền ô trong suốt để lộ nền trắng của tr */
+    box-shadow: none !important;                  /* Xóa bóng mờ nếu có */
+}

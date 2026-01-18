@@ -35,7 +35,16 @@ function toggleAll(source) {
 }
 
 function updateActionButtons() {
-    const count = document.querySelectorAll('.item-check:checked').length;
+    // 1. Lấy tất cả các ô đã chọn
+    const checkedBoxes = document.querySelectorAll('.item-check:checked');
+    
+    // 2. Dùng Set để lọc các ID trùng nhau (Chỉ đếm ID duy nhất)
+    const uniqueIds = new Set();
+    checkedBoxes.forEach(chk => uniqueIds.add(chk.value));
+    
+    // 3. Đếm số lượng ID duy nhất
+    const count = uniqueIds.size;
+
     const btnDelete = document.getElementById('btnDeleteMulti');
     const countSpan = document.getElementById('countSelect');
     

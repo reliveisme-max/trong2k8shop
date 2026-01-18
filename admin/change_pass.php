@@ -26,25 +26,7 @@ require_once '../includes/config.php';
 <body>
 
     <!-- SIDEBAR (DESKTOP) -->
-    <aside class="sidebar">
-        <!-- LOGO MỚI -->
-        <div class="brand"><i class="ph-fill ph-crown"></i> ADMIN PANEL</div>
-
-        <nav class="d-flex flex-column gap-2">
-            <a href="index.php" class="menu-item"><i class="ph-bold ph-squares-four"></i> Tổng Quan</a>
-
-            <!-- MENU MỚI -->
-            <a href="add.php" class="menu-item"><i class="ph-bold ph-plus-circle"></i> Đăng Acc Mới</a>
-
-            <a href="categories.php" class="menu-item"><i class="ph-bold ph-list-dashes"></i> Danh Mục Game</a>
-            <a href="change_pass.php" class="menu-item"><i class="ph-bold ph-lock-key"></i> Đổi mật khẩu</a>
-
-            <div class="mt-auto">
-                <a href="logout.php" class="menu-item text-danger fw-bold"><i class="ph-bold ph-sign-out"></i> Đăng
-                    xuất</a>
-            </div>
-        </nav>
-    </aside>
+    <?php include 'includes/sidebar.php'; ?>
 
     <!-- MAIN CONTENT -->
     <main class="main-content">
@@ -108,28 +90,8 @@ require_once '../includes/config.php';
 
     </main>
 
-    <!-- MOBILE NAV -->
-    <div class="bottom-nav">
-        <a href="index.php" class="nav-item">
-            <i class="ph-duotone ph-squares-four"></i> <span>Home</span>
-        </a>
-        <a href="index.php?type=0" class="nav-item">
-            <i class="ph-duotone ph-tag"></i> <span>Kho</span>
-        </a>
-        <a href="add.php" class="nav-item">
-            <div class="nav-item-add"><i class="ph-bold ph-plus"></i></div>
-        </a>
-        <div class="dropup">
-            <div class="nav-item active" data-bs-toggle="dropdown">
-                <!-- Active ở Menu -->
-                <i class="ph-duotone ph-user-circle"></i> <span>Menu</span>
-            </div>
-            <ul class="dropdown-menu mb-3 shadow-lg border-0">
-                <li><a class="dropdown-item py-2 fw-bold active" href="change_pass.php">Đổi mật khẩu</a></li>
-                <li><a class="dropdown-item py-2 text-danger" href="logout.php">Đăng xuất</a></li>
-            </ul>
-        </div>
-    </div>
+    <!-- MENU DƯỚI (MOBILE) -->
+    <?php include 'includes/bottom_nav.php'; ?>
 
     <!-- SCRIPT -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

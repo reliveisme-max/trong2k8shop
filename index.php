@@ -285,7 +285,7 @@ require_once 'includes/header.php';
             <i class="ph-light ph-coins"></i> 50m - 70m
         </a>
         <a href="?min=70000000" class="btn-price-flat <?= checkActive(70000000, null) ?>">
-            <i class="ph-light ph-diamond"></i> Trên 70m
+            <i class="ph-bold ph-crown"></i> Trên 70m
         </a>
     </div>
     <!-- GRID -->

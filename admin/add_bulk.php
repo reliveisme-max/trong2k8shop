@@ -7,7 +7,7 @@ require_once '../includes/config.php';
 $cats = $conn->query("SELECT * FROM categories ORDER BY display_order ASC, id ASC")->fetchAll();
 
 // 2. Logic Auto ID
-$conn->query("ALTER TABLE products AUTO_INCREMENT = 1");
+//$conn->query("ALTER TABLE products AUTO_INCREMENT = 1");
 $stmt = $conn->query("SELECT MAX(id) FROM products");
 $maxId = $stmt->fetchColumn();
 $nextId = $maxId ? ($maxId + 1) : 1;

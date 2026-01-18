@@ -1,15 +1,15 @@
 <!-- FOOTER -->
-<footer class="pb-5 mb-4 d-md-block d-none">
+<footer class="pb-5 mb-4 d-md-block d-none text-center">
     <!-- Ẩn footer trên mobile cho đỡ vướng menu -->
     <div class="container">
-        <p class="mb-1 fw-bold text-uppercase">&copy; 2026 TRỌNG 2K8 SHOP</p>
-        <p class="mb-0 text-secondary">Hỗ trợ Zalo: <span class="text-dark fw-bold">0984.074.897</span></p>
+        <p class="mb-1 fw-bold text-uppercase">&copy; 2026 TRƯỜNG TRẦN SHOP</p>
+        <p class="mb-0 text-secondary">Hỗ trợ Zalo: <span class="text-dark fw-bold">0901.999.222</span></p>
     </div>
 </footer>
 
-<!-- KHOẢNG TRẮNG ĐỂ ĐỠ BỊ MENU CHE NỘI DUNG CUỐI -->
+<!-- KHOẢNG TRẮNG ĐỂ ĐỠ BỊ MENU CHE NỘI DUNG CUỐI (MOBILE) -->
 <div style="height: 80px;" class="d-md-none"></div>
-
+<?php include 'includes/floating_buttons.php'; ?>
 <!-- COMMON SCRIPTS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

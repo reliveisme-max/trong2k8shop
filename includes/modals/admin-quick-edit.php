@@ -22,10 +22,10 @@
                     <div class="col-6">
                         <label class="small fw-bold text-secondary">Danh mục</label>
                         <select id="qeCategory" class="form-select">
-                            <option value="0">-- Chọn --</option>
-                            <!-- Biến $categories được lấy từ index.php -->
+                            <!-- ĐÃ XÓA DÒNG OPTION VALUE=0 Ở ĐÂY -->
+
                             <?php foreach ($categories as $c): ?>
-                                <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
+                            <option value="<?= $c['id'] ?>"><?= htmlspecialchars($c['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
